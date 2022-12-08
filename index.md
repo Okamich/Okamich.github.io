@@ -38,8 +38,16 @@ In THIS system, there are minutes, hours, days of the week, months. There is a r
 **[[SC2] Dialog (carma) System](https://okamich.github.io/projects/DialogSystem/)** |
 :---: |
 A project with advanced dialog (or carma) system. |
-For example, in this example, a short story is presented.|
+For example, a short story is presented.|
 The player is free to choose certain moments of its course, over time, the story will turn into a short story.|
 Also, for an example and as a bonus, a "karma" system has been added.|
 Initially, there will be 3 buttons in front of the player, each of which carries its own message, one is neutral, the other is good, and there is also an “evil” button!|
 However, under certain conditions, the player will be able to find out which one is which. |
+
+-----
+
+**[[SC2] Map System](https://okamich.github.io/projects/MapSystem/)** |
+:---: |
+A project with simple map system. |
+In this example, a map test of "anything" is presented!|
+But what if I tell you that you can make a "map" of the bar with the ability to click on any glass and bottle, thereby performing an action with them? |
