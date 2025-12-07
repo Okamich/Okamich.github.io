@@ -51,3 +51,12 @@ However, under certain conditions, the player will be able to find out which one
 A project with simple map system. |
 In this example, a map test of "anything" is presented!|
 But what if I tell you that you can make a "map" of the bar with the ability to click on any glass and bottle, thereby performing an action with them? |
+
+-----
+
+**[[HTML] Cups Clicker](https://okamich.github.io/projects/CupsClickerGame/)** |
+:---: |
+Game example make with gemini-3pro |
+You need make more cups, but for what? |
+
+-----
