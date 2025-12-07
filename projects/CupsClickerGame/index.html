@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wasteland Clicker: Pip-Boy Edition</title>
+    <title>Wasteland Clicker: Pip-Boy Edition v1.1</title>
     <style>
         /* --- Шрифты и Базовый стиль --- */
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
@@ -13,7 +13,6 @@
             --pip-dim: #1a8000;
             --pip-bg: #050505;
             --pip-scanline: rgba(18, 16, 16, 0);
-            --scan-color: rgba(0, 255, 0, 0.1);
         }
 
         body {
@@ -53,9 +52,9 @@
         }
 
         @keyframes textShadow {
-            0% { text-shadow: 0.4389924193300864px 0 1px rgba(0,30,255,0.5), -0.4389924193300864px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
-            50% { text-shadow: 2.623px 0 1px rgba(0,30,255,0.5), -2.623px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
-            100% { text-shadow: 0.4389924193300864px 0 1px rgba(0,30,255,0.5), -0.4389924193300864px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
+            0% { text-shadow: 0.4px 0 1px rgba(0,30,255,0.5), -0.4px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
+            50% { text-shadow: 2.6px 0 1px rgba(0,30,255,0.5), -2.6px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
+            100% { text-shadow: 0.4px 0 1px rgba(0,30,255,0.5), -0.4px 0 1px rgba(255,0,80,0.3), 0 0 3px; }
         }
 
         /* --- Layout --- */
@@ -65,7 +64,6 @@
             width: 100%;
         }
 
-        /* Левая панель (Клик) */
         .section-left {
             flex: 1;
             display: flex;
@@ -77,7 +75,6 @@
             position: relative;
         }
 
-        /* Средняя панель (Инфо/Апгрейды) */
         .section-mid {
             flex: 1;
             border-right: 2px solid var(--pip-dim);
@@ -87,12 +84,13 @@
             padding: 10px;
         }
 
-        /* Правая панель (Магазин) */
         .section-right {
             flex: 1;
             overflow-y: auto;
             padding: 10px;
             background: rgba(0, 20, 0, 0.3);
+            /* Чтобы подсказки не обрезались, если выходят за край, нужен visible, 
+               но тогда скролл сломается. Используем position fixed/absolute внутри элемента с осторожностью. */
         }
 
         /* --- Элементы UI --- */
@@ -127,6 +125,7 @@
             transition: transform 0.1s;
             position: relative;
             text-shadow: 2px 2px 0px black;
+            z-index: 10;
         }
         #big-cap:active { transform: scale(0.95); }
         #big-cap::before {
@@ -137,6 +136,7 @@
 
         /* Магазин */
         .store-item {
+            position: relative; /* Для позиционирования подсказки */
             border: 1px solid var(--pip-green);
             margin-bottom: 8px;
             padding: 10px;
@@ -153,6 +153,48 @@
         .item-name { font-weight: bold; font-size: 1.2rem; }
         .item-cost { font-size: 0.9rem; }
         .item-count { font-size: 2rem; font-weight: bold; }
+
+        /* ПОДСКАЗКИ (TOOLTIPS) */
+        .tooltip-box {
+            visibility: hidden;
+            width: 180px;
+            background-color: #001a00;
+            color: var(--pip-green);
+            text-align: left;
+            border: 1px solid var(--pip-green);
+            padding: 8px;
+            position: absolute;
+            z-index: 100;
+            right: 105%; /* Слева от элемента */
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.8);
+            pointer-events: none;
+            font-size: 1rem;
+            line-height: 1.2;
+        }
+        
+        .tooltip-box::after {
+            content: " ";
+            position: absolute;
+            top: 50%;
+            left: 100%; /* Стрелка справа */
+            margin-top: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: transparent transparent transparent var(--pip-green);
+        }
+
+        .store-item:hover .tooltip-box {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-desc { font-size: 0.85rem; color: #7acc7a; margin-bottom: 5px; display: block; font-style: italic;}
+        .tooltip-stat { font-weight: bold; border-top: 1px dashed #1a8000; padding-top: 3px; display: block;}
+
 
         /* Апгрейды */
         #upgrades-container {
@@ -184,6 +226,8 @@
             overflow: hidden;
             font-size: 1.1rem;
             background: #001100;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         /* Всплывающие частицы */
@@ -194,11 +238,24 @@
             pointer-events: none;
             animation: floatUp 1s ease-out forwards;
             text-shadow: 1px 1px 0 #000;
+            z-index: 999;
         }
         @keyframes floatUp {
             0% { transform: translateY(0); opacity: 1; }
             100% { transform: translateY(-50px); opacity: 0; }
         }
+
+        /* Кнопки меню */
+        .menu-btn {
+            background: transparent;
+            border: 1px solid var(--pip-green);
+            color: var(--pip-green);
+            padding: 5px 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .menu-btn:hover { background: var(--pip-green); color: black; }
 
         /* Адаптив для мобильных */
         @media (max-width: 800px) {
@@ -213,19 +270,19 @@
             }
             .section-left { padding-top: 40px; }
             #big-cap { width: 150px; height: 150px; }
+            
+            /* На мобильных тултипы показываем снизу/сверху, а не сбоку */
+            .tooltip-box {
+                right: auto;
+                left: 10px;
+                top: -100%; /* Сверху элемента */
+                width: 250px;
+                transform: none;
+                background-color: #000;
+                z-index: 999;
+            }
+            .tooltip-box::after { display: none; }
         }
-
-        /* Кнопки меню */
-        .menu-btn {
-            background: transparent;
-            border: 1px solid var(--pip-green);
-            color: var(--pip-green);
-            padding: 5px 10px;
-            margin-top: 10px;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .menu-btn:hover { background: var(--pip-green); color: black; }
     </style>
 </head>
 <body>
@@ -236,14 +293,14 @@
     <!-- ЛЕВАЯ КОЛОНКА: Основное действие -->
     <div class="section-left">
         <div id="news-ticker">/// ROBCO INDUSTRIES TERMINAL LINK ONLINE ///</div>
-        <div class="caps-display"><span id="caps">0</span> CAPS</div>
-        <div class="cps-display">per second: <span id="cps">0.0</span></div>
+        <div class="caps-display"><span id="caps">0.00</span> CAPS</div>
+        <div class="cps-display">per second: <span id="cps">0.00</span></div>
         
         <div id="big-cap"></div>
         
         <div style="margin-top: 20px; text-align: center;">
-            <button class="menu-btn" onclick="saveGame()">SAVE</button>
-            <button class="menu-btn" onclick="resetGame()">RESET</button>
+            <button class="menu-btn" onclick="saveGame()">SAVE DATA</button>
+            <button class="menu-btn" onclick="resetGame()">PURGE DATA</button>
         </div>
     </div>
 
@@ -251,15 +308,14 @@
     <div class="section-mid">
         <h2>:: UPGRADES ::</h2>
         <div id="upgrades-container">
-            <!-- Сюда добавляются апгрейды -->
-            <div style="opacity: 0.5; font-size: 0.8rem;">[NO UPGRADES AVAILABLE]</div>
+            <div style="opacity: 0.5; font-size: 0.8rem;">[AWAITING DATA...]</div>
         </div>
 
-        <h2>:: DATA ::</h2>
+        <h2>:: HOLOTAPE LOG ::</h2>
         <div id="stats-log">
-            <p>> Vault Dweller Status: ALIVE</p>
+            <p>> Status: <span style="color:var(--pip-green)">HEALTHY</span></p>
             <p>> Time Wasted: <span id="time-played">0</span> sec</p>
-            <p>> Total Clicks: <span id="total-clicks">0</span></p>
+            <p>> Manual Clicks: <span id="total-clicks">0</span></p>
         </div>
     </div>
 
@@ -275,18 +331,16 @@
 <script>
 /* --- ДАННЫЕ ИГРЫ --- */
 
-// Конфигурация зданий
 const buildingsData = [
-    { id: 'cursor', name: 'Auto-Clicker', cost: 15, baseCps: 0.1, icon: '👆' },
-    { id: 'radroach', name: 'Tamed Radroach', cost: 100, baseCps: 1, icon: '🪳' },
-    { id: 'scavenger', name: 'Wasteland Scavenger', cost: 1100, baseCps: 8, icon: '🎒' },
-    { id: 'brahmin', name: 'Brahmin Caravan', cost: 12000, baseCps: 47, icon: '🐄' },
-    { id: 'turret', name: 'Laser Turret', cost: 130000, baseCps: 260, icon: '🔫' },
-    { id: 'vault', name: 'Vault 13', cost: 1400000, baseCps: 1400, icon: '⚙️' },
-    { id: 'bos', name: 'B.O.S. Outpost', cost: 20000000, baseCps: 7800, icon: '🛡️' }
+    { id: 'cursor', name: 'Auto-Clicker', desc: 'A simple robotic finger.', cost: 15, baseCps: 0.1, icon: '👆' },
+    { id: 'radroach', name: 'Tamed Radroach', desc: 'Disgusting, but loyal.', cost: 100, baseCps: 1, icon: '🪳' },
+    { id: 'scavenger', name: 'Scavenger', desc: 'Finds caps in the trash.', cost: 1100, baseCps: 8, icon: '🎒' },
+    { id: 'brahmin', name: 'Brahmin Caravan', desc: 'Two heads earn more caps.', cost: 12000, baseCps: 47, icon: '🐄' },
+    { id: 'turret', name: 'Laser Turret', desc: 'Aggressive negotiations.', cost: 130000, baseCps: 260, icon: '🔫' },
+    { id: 'vault', name: 'Vault 13', desc: 'A whole community working for you.', cost: 1400000, baseCps: 1400, icon: '⚙️' },
+    { id: 'bos', name: 'B.O.S. Outpost', desc: 'Technology equals profit.', cost: 20000000, baseCps: 7800, icon: '🛡️' }
 ];
 
-// Конфигурация апгрейдов
 const upgradesData = [
     { id: 'u_cursor_1', name: 'Reinforced Mouse', desc: 'Auto-Clickers are twice as efficient.', cost: 500, trigger: (g) => g.buildings['cursor'] >= 10, effect: (g) => multBuild(g, 'cursor', 2), icon: '🖱️' },
     { id: 'u_roach_1', name: 'Radioactive Food', desc: 'Radroaches yield 2x Caps.', cost: 1000, trigger: (g) => g.buildings['radroach'] >= 10, effect: (g) => multBuild(g, 'radroach', 2), icon: '☢️' },
@@ -294,7 +348,6 @@ const upgradesData = [
     { id: 'u_global_1', name: 'Nuka-Cola Quantum', desc: 'All production +10%', cost: 50000, trigger: (g) => g.capsTotal >= 10000, effect: (g) => g.globalMult *= 1.1, icon: '🥤' }
 ];
 
-// Новости
 const newsTicker = [
     "War... War never changes.",
     "Radroach infestation reported in Sector 7.",
@@ -303,25 +356,23 @@ const newsTicker = [
     "GARY? GARY!",
     "Super Mutants spotted near the water chip.",
     "Mysterious Stranger appeared and vanished.",
-    "Price of Stimpaks skyrockets."
+    "Stimpack prices up by 15%."
 ];
 
 /* --- ЛОГИКА ИГРЫ --- */
 
 let game = {
-    caps: 0,
-    capsTotal: 0,
+    caps: 0.0,
+    capsTotal: 0.0,
     clicks: 0,
     startTime: Date.now(),
-    buildings: {}, // { cursor: 10, radroach: 2 ... }
-    upgrades: [],  // ['u_cursor_1']
+    buildings: {},
+    upgrades: [],
     globalMult: 1,
-    buildingMults: {} // { cursor: 1, radroach: 2 ... }
+    buildingMults: {}
 };
 
-// Инициализация
 function init() {
-    // Инициализация пустых значений
     buildingsData.forEach(b => {
         game.buildings[b.id] = 0;
         game.buildingMults[b.id] = 1;
@@ -330,21 +381,18 @@ function init() {
     loadGame();
     renderStore();
     requestAnimationFrame(gameLoop);
-    setInterval(saveGame, 30000); // Автосохранение
-    setInterval(updateTicker, 10000); // Обновление новостей
+    setInterval(saveGame, 30000);
+    setInterval(updateTicker, 10000);
     updateTicker();
 }
 
-// Главный цикл (requestAnimationFrame для UI, setInterval для ресурсов)
 let lastTime = Date.now();
-let accumulator = 0;
 
 function gameLoop() {
     let now = Date.now();
     let dt = (now - lastTime) / 1000;
     lastTime = now;
 
-    // Начисление пассивного дохода
     let cps = calculateCPS();
     if (cps > 0) {
         let earned = cps * dt;
@@ -352,16 +400,12 @@ function gameLoop() {
         game.capsTotal += earned;
     }
 
-    // Проверка открытия апгрейдов
     checkUpgrades();
-
-    // Обновление UI
     updateUI(cps);
     
     requestAnimationFrame(gameLoop);
 }
 
-// Расчет CPS (Caps Per Second)
 function calculateCPS() {
     let cps = 0;
     buildingsData.forEach(b => {
@@ -372,25 +416,27 @@ function calculateCPS() {
     return cps * game.globalMult;
 }
 
-// Помощник для эффектов апгрейдов
+// Получить CPS для одного конкретного здания (с учетом всех бонусов)
+function getSingleBuildingCPS(id) {
+    let b = buildingsData.find(x => x.id === id);
+    let mult = game.buildingMults[id] || 1;
+    return b.baseCps * mult * game.globalMult;
+}
+
 function multBuild(g, id, multiplier) {
     g.buildingMults[id] *= multiplier;
 }
 
-// Проверка апгрейдов
 function checkUpgrades() {
     const container = document.getElementById('upgrades-container');
-    // Очистка если там только заглушка
-    if(container.children.length > 0 && container.children[0].innerText.includes("NO UPGRADES")) {
-        // не очищаем тут, делаем проверку ниже
+    if(container.children.length > 0 && container.children[0].innerText.includes("AWAITING")) {
+        // Ожидание
     }
 
     upgradesData.forEach(u => {
-        // Если апгрейд еще не куплен И условие выполнено
         if (!game.upgrades.includes(u.id) && u.trigger(game)) {
-            // Проверяем, отрисован ли он уже (чтобы не дублировать)
             if (!document.getElementById(`upg-${u.id}`)) {
-                if(container.innerText.includes("NO UPGRADES")) container.innerHTML = '';
+                if(container.innerText.includes("AWAITING")) container.innerHTML = '';
                 
                 let el = document.createElement('div');
                 el.id = `upg-${u.id}`;
@@ -404,40 +450,31 @@ function checkUpgrades() {
     });
 }
 
-// Покупка апгрейда
 function buyUpgrade(u) {
     if (game.caps >= u.cost) {
         game.caps -= u.cost;
         game.upgrades.push(u.id);
-        u.effect(game); // Применяем эффект
-        document.getElementById(`upg-${u.id}`).remove(); // Удаляем иконку
-        
-        // Пересчет CPS мгновенно
+        u.effect(game);
+        document.getElementById(`upg-${u.id}`).remove();
         updateUI(calculateCPS());
     }
 }
 
-// Клик по большой крышке
 document.getElementById('big-cap').addEventListener('click', (e) => {
     game.clicks++;
-    
-    // Сила клика (база 1 + часть от CPS для прогрессии)
-    let clickPower = 1 + (calculateCPS() * 0.05); // 5% от CPS
+    let clickPower = 1 + (calculateCPS() * 0.05);
     if (clickPower < 1) clickPower = 1;
     
     game.caps += clickPower;
     game.capsTotal += clickPower;
 
-    // Визуальный эффект
     spawnFloatingText(e.clientX, e.clientY, `+${formatNumber(clickPower)}`);
 });
 
-// Создание плавающего текста
 function spawnFloatingText(x, y, text) {
     let el = document.createElement('div');
     el.className = 'floating-text';
     el.innerText = text;
-    // Случайный разброс
     let offsetX = (Math.random() - 0.5) * 40;
     el.style.left = (x + offsetX) + 'px';
     el.style.top = (y - 20) + 'px';
@@ -445,7 +482,6 @@ function spawnFloatingText(x, y, text) {
     setTimeout(() => el.remove(), 1000);
 }
 
-// Отрисовка магазина
 function renderStore() {
     const container = document.getElementById('store-container');
     container.innerHTML = '';
@@ -456,7 +492,12 @@ function renderStore() {
         el.id = `store-${b.id}`;
         el.onclick = () => buyBuilding(b.id);
         
+        // Добавлен .tooltip-box
         el.innerHTML = `
+            <div class="tooltip-box">
+                <span class="tooltip-desc">${b.desc}</span>
+                <span class="tooltip-stat" id="tooltip-stat-${b.id}">Produces: ${formatNumber(getSingleBuildingCPS(b.id))} cps</span>
+            </div>
             <div class="item-info">
                 <span class="item-name">${b.icon} ${b.name}</span>
                 <span class="item-cost" id="cost-${b.id}">Cost: ${formatNumber(getBuildingCost(b))}</span>
@@ -467,13 +508,11 @@ function renderStore() {
     });
 }
 
-// Расчет стоимости (1.15^count)
 function getBuildingCost(b) {
     let count = game.buildings[b.id];
     return Math.floor(b.cost * Math.pow(1.15, count));
 }
 
-// Покупка здания
 function buyBuilding(id) {
     let b = buildingsData.find(x => x.id === id);
     let cost = getBuildingCost(b);
@@ -482,23 +521,22 @@ function buyBuilding(id) {
         game.caps -= cost;
         game.buildings[id]++;
         
-        // Обновить магазин (цену и количество)
         document.getElementById(`count-${id}`).innerText = game.buildings[id];
         document.getElementById(`cost-${id}`).innerText = "Cost: " + formatNumber(getBuildingCost(b));
     }
 }
 
-// Обновление UI
 function updateUI(cps) {
+    // Используем обновленный formatNumber для float значений
     document.getElementById('caps').innerText = formatNumber(game.caps);
     document.getElementById('cps').innerText = formatNumber(cps);
-    document.title = `${formatNumber(game.caps)} Caps - Wasteland Clicker`;
+    document.title = `${Math.floor(game.caps)} Caps - Wasteland Clicker`; // В заголовке можно оставить целое
 
     document.getElementById('time-played').innerText = Math.floor((Date.now() - game.startTime)/1000);
     document.getElementById('total-clicks').innerText = game.clicks;
 
-    // Обновление доступности кнопок магазина
     buildingsData.forEach(b => {
+        // Обновление состояния кнопок (активно/неактивно)
         let btn = document.getElementById(`store-${b.id}`);
         let cost = getBuildingCost(b);
         if (game.caps >= cost) {
@@ -506,41 +544,43 @@ function updateUI(cps) {
         } else {
             btn.classList.add('disabled');
         }
+
+        // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ТУЛТИПОВ
+        // (если купили апгрейд - цифра изменится)
+        let tooltipStat = document.getElementById(`tooltip-stat-${b.id}`);
+        if(tooltipStat) {
+            let currentYield = getSingleBuildingCPS(b.id);
+            tooltipStat.innerText = `Produces: ${formatNumber(currentYield)} cps`;
+        }
     });
 }
 
-// Бегущая строка
 function updateTicker() {
     const ticker = document.getElementById('news-ticker');
     const msg = newsTicker[Math.floor(Math.random() * newsTicker.length)];
     ticker.innerText = `/// NEWS: ${msg} ///`;
 }
 
-// Форматирование чисел (1.2k, 1M и т.д.)
+// Новая функция форматирования для Float с 2 знаками
 function formatNumber(num) {
-    if (num < 1000) return Math.floor(num);
-    if (num < 1000000) return (num / 1000).toFixed(1) + 'k';
+    if (num < 1000) return num.toFixed(2); // Всегда 2 знака, например 10.50
+    if (num < 1000000) return (num / 1000).toFixed(2) + 'k';
     if (num < 1000000000) return (num / 1000000).toFixed(2) + 'M';
     return (num / 1000000000).toFixed(2) + 'B';
 }
 
-/* --- СОХРАНЕНИЕ / ЗАГРУЗКА --- */
-
 function saveGame() {
     const saveString = JSON.stringify(game);
     localStorage.setItem('falloutClickerSave', saveString);
-    spawnFloatingText(window.innerWidth/2, window.innerHeight/2, "GAME SAVED");
+    spawnFloatingText(window.innerWidth/2, window.innerHeight/2, "DATA SAVED");
 }
 
 function loadGame() {
     const saveString = localStorage.getItem('falloutClickerSave');
     if (saveString) {
         const savedGame = JSON.parse(saveString);
-        // Мягкое объединение, чтобы новые версии игры не ломали старые сейвы
         game = { ...game, ...savedGame };
         
-        // Пересчет апгрейдов (функции не сохраняются в JSON)
-        // Сбросим мультипликаторы и применим купленные апгрейды заново
         buildingsData.forEach(b => game.buildingMults[b.id] = 1);
         game.globalMult = 1;
         
@@ -558,7 +598,6 @@ function resetGame() {
     }
 }
 
-// Старт
 init();
 
 </script>
