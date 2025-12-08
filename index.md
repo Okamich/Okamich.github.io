@@ -60,3 +60,13 @@ Game example make with gemini-3pro |
 You need make more cups, but for what? |
 
 -----
+
+-----
+
+**[[HTML] Transhumance](https://okamich.github.io/projects/transhumanceGame/)** |
+:---: |
+Game example make with gemini-3pro |
+You got lost in a snowstorm and found the station caretaker's house, but suddenly you find yourself embroiled in a struggle for survival. |
+
+-----
+
