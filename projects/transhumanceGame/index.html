@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПЕРЕГОН</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505; /* Почти полная тьма */
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(to bottom, #0a0a10 0%, #1a1a20 80%, #eee 100%); /* Небо и снег */
+        }
+
+        /* Интерфейс */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .bar-container {
+            margin-bottom: 10px;
+            background: #333;
+            width: 200px;
+            height: 20px;
+            border: 2px solid #555;
+        }
+
+        #hp-bar { background: #d32f2f; width: 100%; height: 100%; transition: width 0.2s;}
+        #stamina-bar { background: #1976d2; width: 100%; height: 100%; transition: width 0.1s;}
+        
+        #timer-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #ffeb3b;
+        }
+
+        /* Игровые объекты */
+        #tower {
+            position: absolute;
+            bottom: 50px; /* На уровне снега */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 300px;
+            background: #2c2c2c;
+            border: 2px solid #111;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 2;
+        }
+
+        /* Окна башни */
+        .window {
+            width: 20px;
+            height: 30px;
+            background: #ffaa00;
+            margin-bottom: 150px;
+            opacity: 0.5;
+            box-shadow: 0 0 10px #ffaa00;
+            animation: flicker 3s infinite;
+        }
+
+        /* Генератор */
+        #generator {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 30px;
+            background: #4caf50; /* Зеленый - готов */
+            border: 2px solid #000;
+            z-index: 6;
+            cursor: pointer;
+            box-shadow: 0 0 5px #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: black;
+            font-weight: bold;
+        }
+        #generator.broken {
+            background: #d32f2f; /* Красный - сломан */
+            cursor: not-allowed;
+        }
+
+        /* Световой барьер */
+        #light-barrier {
+            position: absolute;
+            bottom: 50px; /* Уровень земли */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px; /* Радиус защиты */
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 200, 0.4) 0%, rgba(255, 200, 0, 0) 70%);
+            z-index: 4;
+            pointer-events: none;
+            display: none; /* Скрыт по умолчанию */
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #light-barrier.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Рельса (кнопка действия) */
+        #metal-rail {
+            position: absolute;
+            bottom: 120px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 100px;
+            background: linear-gradient(90deg, #555, #888, #555);
+            border: 1px solid #000;
+            z-index: 5;
+            cursor: pointer;
+            box-shadow: 0 0 5px #000;
+        }
+        
+        #metal-rail:active {
+            transform: translateX(-50%) scale(0.95);
+            background: #aaa;
+        }
+
+        #metal-rail::after {
+            content: "БЕЙ!";
+            position: absolute;
+            top: -30px;
+            left: -10px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            animation: bounce 1s infinite;
+        }
+
+        /* Враги */
+        .enemy {
+            position: absolute;
+            bottom: 50px;
+            width: 40px;
+            height: 30px;
+            background: black;
+            border-radius: 50% 50% 0 0;
+            z-index: 3;
+            transition: transform 0.1s;
+        }
+        
+        .enemy::before, .enemy::after { /* Глаза */
+            content: '';
+            position: absolute;
+            top: 10px;
+            width: 4px;
+            height: 4px;
+            background: red;
+            border-radius: 50%;
+            box-shadow: 0 0 4px red;
+        }
+        .enemy::before { left: 10px; }
+        .enemy::after { right: 10px; }
+
+        /* Эффект звуковой волны */
+        .sound-wave {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            border: 5px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            opacity: 1;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* Поезд */
+        #train {
+            position: absolute;
+            bottom: 0;
+            left: -2000px; /* За экраном */
+            width: 1500px;
+            height: 400px;
+            background: #000;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+        }
+        .headlight {
+            position: absolute;
+            right: 0;
+            top: 250px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 500px 200px white; /* Огромный свет */
+        }
+
+        /* Экраны меню и UI */
+        #intro-screen, #start-screen, #game-over-screen, #win-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* ГЛАВНОЕ МЕНЮ (НОВОЕ) */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #1a1a1a; /* Плейсхолдер фона */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start; /* Меню слева */
+            padding-left: 10%; /* Отступ слева */
+            z-index: 200; /* Поверх всего */
+        }
+
+        .game-title {
+            font-size: 80px;
+            color: #d32f2f;
+            text-shadow: 4px 4px 0 #000;
+            margin-bottom: 50px;
+            letter-spacing: 5px;
+        }
+
+        .menu-buttons button {
+            display: block;
+            width: 300px;
+            text-align: left;
+            margin: 15px 0;
+            padding: 15px 20px;
+            background: transparent;
+            border: 2px solid #555;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .menu-buttons button:hover {
+            background: #d32f2f;
+            border-color: #d32f2f;
+            padding-left: 30px; /* Эффект сдвига */
+        }
+
+        /* НОВОЕ: Оверлей обучения */
+        #tutorial-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 90;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tutorial-box {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            color: black;
+            padding: 20px;
+            max-width: 300px;
+            border-radius: 5px;
+            box-shadow: 0 0 20px black;
+            text-align: center;
+            animation: bounce 2s infinite;
+        }
+        
+        .tutorial-box p { margin: 0 0 10px 0; font-weight: bold; }
+        .tutorial-box button { margin-top: 5px; font-size: 16px; padding: 5px 15px; }
+
+        /* Позиции подсказок */
+        .pos-rail {
+            bottom: 250px; /* Над рельсой */
+            left: 60%; /* Чуть правее центра */
+        }
+        
+        .pos-rail::after { /* Стрелка вниз влево */
+            content: "↙";
+            font-size: 40px;
+            position: absolute;
+            bottom: -30px;
+            left: 10px;
+            color: white;
+            text-shadow: 0 0 5px black;
+        }
+
+        .pos-gen {
+            bottom: 100px; /* Над генератором */
+            right: 55%; /* Чуть левее центра */
+        }
+        
+        .pos-gen::after { /* Стрелка вниз вправо */
+            content: "↘";
+            font-size: 40px;
+            position: absolute;
+            bottom: -30px;
+            right: 10px;
+            color: white;
+            text-shadow: 0 0 5px black;
+        }
+
+        #intro-text {
+            font-size: 22px;
+            max-width: 600px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+            min-height: 100px;
+        }
+        
+        /* Кнопки внутри игры (диалоги, интро, конец) */
+        .game-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: inherit;
+        }
+        .game-btn:hover { background: #b71c1c; }
+
+        .hidden { display: none !important; }
+
+        /* Анимации */
+        @keyframes flicker { 0% {opacity:0.5;} 50% {opacity:0.8;} 100% {opacity:0.5;} }
+        @keyframes bounce { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-5px);} }
+        @keyframes shockwave { 
+            0% { width: 10px; height: 10px; opacity: 1; border-width: 10px;} 
+            100% { width: 1000px; height: 1000px; opacity: 0; border-width: 0px;} 
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <!-- UI -->
+        <div id="ui-layer">
+            <div>ПРОЧНОСТЬ ДВЕРИ</div>
+            <div class="bar-container"><div id="hp-bar"></div></div>
+            <div>ВЫНОСЛИВОСТЬ (ДЛЯ УДАРА)</div>
+            <div class="bar-container"><div id="stamina-bar"></div></div>
+        </div>
+        <div id="timer-display">ДО ПОЕЗДА: 60 сек</div>
+
+        <!-- Игровой мир -->
+        <div id="tower">
+            <div class="window"></div>
+            <!-- Генератор внутри башни -->
+            <div id="generator" onclick="toggleGenerator()">⚡</div>
+        </div>
+
+        <!-- Световой барьер -->
+        <div id="light-barrier"></div>
+        
+        <!-- Клик сюда создает звук -->
+        <div id="metal-rail"></div>
+        
+        <!-- Поезд -->
+        <div id="train"><div class="headlight"></div></div>
+
+        <!-- Оверлей обучения (скрыт) -->
+        <div id="tutorial-overlay" class="hidden">
+            <div id="tutorial-box" class="tutorial-box">
+                <p id="tutorial-text">Текст подсказки</p>
+                <button class="game-btn" onclick="closeTutorial()">ПОНЯЛ</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ГЛАВНОЕ МЕНЮ -->
+    <div id="main-menu">
+        <h1 class="game-title">ПЕРЕГОН</h1>
+        <div class="menu-buttons">
+            <button onclick="startFromMenu()">НАЧАТЬ ИГРУ</button>
+            <button onclick="alert('В разработке')">ЗАГРУЗИТЬ</button>
+            <button onclick="alert('В разработке')">НАСТРОЙКИ</button>
+            <button onclick="alert('Разработчик: AI & User')">КРЕДИТЫ</button>
+            <button onclick="alert('Для выхода закройте вкладку')">ВЫХОД</button>
+        </div>
+    </div>
+
+    <!-- Экраны состояний -->
+
+    <!-- ВСТУПЛЕНИЕ (Скрыто по умолчанию) -->
+    <div id="intro-screen" class="hidden">
+        <p id="intro-text">Загрузка...</p>
+        <button class="game-btn" onclick="nextIntro()">ДАЛЕЕ</button>
+    </div>
+
+    <div id="game-over-screen" class="hidden">
+        <h1 style="color: #d32f2f">ОНИ ПРОРВАЛИСЬ</h1>
+        <p>Дверь сломана. Света больше нет.</p>
+        <button class="game-btn" onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
+    </div>
+
+    <div id="win-screen" class="hidden">
+        <h1 style="color: #4caf50">ПОЕЗД ПРИБЫЛ</h1>
+        <p>Звук гудка разорвал тьму.<br>Твари исчезли. Вы дожили до утра.</p>
+        <button class="game-btn" onclick="location.reload()">ИГРАТЬ ЕЩЕ</button>
+    </div>
+
+    <script>
+        // --- ЛОГИКА МЕНЮ ---
+        function startFromMenu() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('intro-screen').classList.remove('hidden');
+        }
+
+        // --- СЦЕНАРИЙ ВСТУПЛЕНИЯ ---
+        const introSlides = [
+            "Метель застала тебя в пути на станцию. Начало вечереть, а солнце уже опускалось за горизонт.<br>Ты замерзал в лесу, пока не набрел на старую башню смотрителя Ж/Д станции.",
+            "В надежде, ты дернул ручку но дверь оказалась заперта. «Эй, есть кто дома!?», - ты крикнул и сильно постучал в дверь.",
+            "Ты уже собрался было идти дальше, как внезапно, дверь открылась и в узкой щели дверного проема ты увидел красивую девушку в тулупе явно не её размера. «Эм, мне бы ...», - не успел ты закончить фразу, как дверь открылась и девушка, с силой втянула тебя внутрь",
+            "Закрыв за тобой дверь, она забаррикадировала её тяжелыми ящиками и столом, а затем взяв тебя за руку поспешила наверх башни.",
+            "Наверху ты застал страшную картину. Старик сидел возле кровати обтирая молодого юношу. который был перевязан бинтами, пропитанными кровью. «Кто там, Машка?» не оборачиваясь спросил старик.",
+            "Прокашлявшись, ты решил представиться - «Здрасте, я тут заблудился, а еще эта метель....». Но не успел ты закончить, как с улицы донесся ужасающий вой...",
+            "Старик обернулся на тебя, на его лице был страх, но в глазах виднелся огонь битвы. «Они приходят из леса», — говорит старик. — «Тени с красными глазами. Пули их не берут», Старик дает тебе кувалду, - «Им страшен только резонанс. Громкий звук металла дробит их сущность»"
+        ];
+        
+        let currentIntroIndex = 0;
+        document.getElementById('intro-text').innerHTML = introSlides[0];
+
+        function nextIntro() {
+            currentIntroIndex++;
+            
+            // Звук воя на 6-м слайде (индекс 5)
+            if (currentIntroIndex === 5) {
+                playHowlSound();
+            }
+
+            if (currentIntroIndex < introSlides.length) {
+                document.getElementById('intro-text').innerHTML = introSlides[currentIntroIndex];
+            } else {
+                // Конец интро - СТАРТ ИГРЫ
+                document.getElementById('intro-screen').classList.add('hidden');
+                startTutorial1(); // Запускаем первый туториал вместо геймплея
+            }
+        }
+
+        // --- ЛОГИКА ОБУЧЕНИЯ ---
+        let tutorial2Shown = false;
+
+        function startTutorial1() {
+            const overlay = document.getElementById('tutorial-overlay');
+            const box = document.getElementById('tutorial-box');
+            const text = document.getElementById('tutorial-text');
+
+            overlay.classList.remove('hidden');
+            box.className = 'tutorial-box pos-rail'; // Позиция у рельсы
+            text.innerHTML = "Бей в сигнальную рельсу! <br>Им страшен только громкий звук, он дробит их сущность";
+        }
+
+        function triggerTutorial2() {
+            if (tutorial2Shown) return;
+            tutorial2Shown = true;
+            gameState.running = false; // Пауза
+
+            const overlay = document.getElementById('tutorial-overlay');
+            const box = document.getElementById('tutorial-box');
+            const text = document.getElementById('tutorial-text');
+
+            overlay.classList.remove('hidden');
+            box.className = 'tutorial-box pos-gen'; // Позиция у генератора
+            text.innerHTML = "Машка — врубай генератор. <br>Свет их ненадолго задержит, а ты Гость, передохни, но не зевай! Свет не вечен — генератор ломается.";
+        }
+
+        function closeTutorial() {
+            document.getElementById('tutorial-overlay').classList.add('hidden');
+            
+            if (!gameState.started) {
+                // Если игра еще не начиналась (после 1 туториала)
+                startGame();
+            } else {
+                // Если это пауза (после 2 туториала)
+                gameState.running = true;
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // --- НАСТРОЙКИ ИГРЫ ---
+        const GAME_DURATION = 60; 
+        const MAX_HP = 100;
+        const MAX_STAMINA = 100;
+        const STAMINA_COST = 25;
+        const STAMINA_REGEN = 0.1; // 0.1 как просили
+        const ENEMY_SPEED = 1.5;
+        const SOUND_RANGE = 300; 
+        
+        const GEN_DURATION = 5000; 
+        const GEN_COOLDOWN = 10000; 
+        const LIGHT_RADIUS = 150; 
+
+        // --- СОСТОЯНИЕ ---
+        let gameState = {
+            started: false, // Флаг что игра вообще инициализирована
+            running: false,
+            hp: MAX_HP,
+            stamina: MAX_STAMINA,
+            timeLeft: GAME_DURATION,
+            enemies: [],
+            lastSpawn: 0,
+            genActive: false,
+            genBroken: false,
+            genTimer: 0 
+        };
+
+        // --- AUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playMetalSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.6);
+        }
+
+        function playTrainSound() {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 50; 
+            gainNode.gain.value = 0.5;
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 3);
+        }
+
+        function playHowlSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            // Вой: от высокого к низкому
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime + 1.5);
+            
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.5); // Fade in
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2.0); // Fade out
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 2.0);
+        }
+
+        // --- ЛОГИКА ГЕНЕРАТОРА ---
+        const genEl = document.getElementById('generator');
+        const lightEl = document.getElementById('light-barrier');
+
+        function toggleGenerator() {
+            if (!gameState.running) return;
+            if (gameState.genActive || gameState.genBroken) return; 
+
+            gameState.genActive = true;
+            lightEl.classList.add('active');
+            
+            setTimeout(() => {
+                if(!gameState.running && gameState.timeLeft > 0) { 
+                    // Если пауза, ждем (в MVP упростим - просто выключится по таймеру)
+                }
+                breakGenerator();
+            }, GEN_DURATION);
+        }
+
+        function breakGenerator() {
+            gameState.genActive = false;
+            gameState.genBroken = true;
+            lightEl.classList.remove('active');
+            genEl.classList.add('broken');
+            genEl.innerText = "ЧИНЮ";
+            gameState.genTimer = GEN_COOLDOWN;
+        }
+
+        // --- ЛОГИКА ИГРЫ ---
+        const towerEl = document.getElementById('tower');
+        const railEl = document.getElementById('metal-rail');
+        const container = document.getElementById('game-container');
+        
+        function startGame() {
+            gameState.started = true;
+            gameState.running = true;
+            gameLoop();
+            
+            const timerInterval = setInterval(() => {
+                if (!gameState.running) return; // Пауза таймера если игра на паузе (обучение)
+                
+                gameState.timeLeft--;
+                document.getElementById('timer-display').innerText = `ДО ПОЕЗДА: ${gameState.timeLeft} сек`;
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    winGame();
+                }
+            }, 1000);
+        }
+
+        function spawnEnemy() {
+            const side = Math.random() > 0.5 ? 'left' : 'right';
+            const enemyEl = document.createElement('div');
+            enemyEl.classList.add('enemy');
+            const startX = side === 'left' ? -50 : window.innerWidth + 50;
+            const enemy = { el: enemyEl, x: startX, side: side, dead: false };
+            enemyEl.style.left = startX + 'px';
+            if (side === 'left') enemyEl.style.transform = 'scaleX(1)';
+            else enemyEl.style.transform = 'scaleX(-1)';
+            container.appendChild(enemyEl);
+            gameState.enemies.push(enemy);
+        }
+
+        // КЛИК ПО РЕЛЬСЕ
+        railEl.addEventListener('mousedown', () => {
+            if (!gameState.running) return;
+            
+            if (gameState.stamina >= STAMINA_COST) {
+                gameState.stamina -= STAMINA_COST;
+                updateUI();
+                playMetalSound();
+
+                const wave = document.createElement('div');
+                wave.classList.add('sound-wave');
+                wave.style.animation = 'shockwave 0.5s ease-out forwards';
+                container.appendChild(wave);
+                setTimeout(() => wave.remove(), 500);
+
+                const towerX = window.innerWidth / 2;
+                gameState.enemies.forEach(enemy => {
+                    if (enemy.dead) return;
+                    const dist = Math.abs(enemy.x - towerX);
+                    if (dist < SOUND_RANGE) {
+                        enemy.dead = true;
+                        enemy.el.style.backgroundColor = '#555';
+                        enemy.el.style.transform += ' translateY(-20px) rotate(90deg)';
+                        enemy.el.style.opacity = '0';
+                        setTimeout(() => { if(enemy.el.parentNode) enemy.el.remove(); }, 500);
+                    }
+                });
+            }
+        });
+
+        function gameLoop() {
+            if (!gameState.running) return;
+
+            // Проверка на Туториал 2 (Мало стамины)
+            if (gameState.stamina <= 20 && !tutorial2Shown) {
+                triggerTutorial2();
+                return; // Прерываем цикл
+            }
+
+            // Регенерация стамины
+            if (gameState.stamina < MAX_STAMINA) {
+                gameState.stamina += STAMINA_REGEN;
+            }
+
+            // Починка генератора
+            if (gameState.genBroken) {
+                gameState.genTimer -= 16; 
+                if (gameState.genTimer <= 0) {
+                    gameState.genBroken = false;
+                    genEl.classList.remove('broken');
+                    genEl.innerText = "⚡";
+                }
+            }
+            
+            // Спавн
+            let spawnRate = 100 - (60 - gameState.timeLeft); 
+            if (spawnRate < 20) spawnRate = 20;
+            if (Math.random() * 100 < (100 / spawnRate) + 1) spawnEnemy();
+
+            // Движение
+            const towerCenter = window.innerWidth / 2;
+            const towerWidth = 80;
+            
+            gameState.enemies.forEach((enemy, index) => {
+                if (enemy.dead) return;
+                const distToCenter = Math.abs(enemy.x - towerCenter);
+                let blockedByLight = false;
+                if (gameState.genActive && distToCenter <= LIGHT_RADIUS) blockedByLight = true;
+
+                if (!blockedByLight) {
+                    if (enemy.side === 'left') {
+                        if (enemy.x < towerCenter - towerWidth/2) enemy.x += ENEMY_SPEED;
+                        else damageTower();
+                    } else {
+                        if (enemy.x > towerCenter + towerWidth/2) enemy.x -= ENEMY_SPEED;
+                        else damageTower();
+                    }
+                    enemy.el.style.left = enemy.x + 'px';
+                }
+            });
+
+            gameState.enemies = gameState.enemies.filter(e => !e.dead || e.el.style.opacity !== '0');
+            updateUI();
+            
+            if (gameState.hp > 0 && gameState.timeLeft > 0) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function damageTower() {
+            gameState.hp -= 0.5; 
+            if (gameState.hp <= 0) gameOver();
+            if (Math.random() > 0.8) {
+                towerEl.style.borderColor = 'red';
+                setTimeout(() => towerEl.style.borderColor = '#111', 100);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('hp-bar').style.width = (gameState.hp / MAX_HP * 100) + '%';
+            document.getElementById('stamina-bar').style.width = (gameState.stamina / MAX_STAMINA * 100) + '%';
+        }
+
+        function winGame() {
+            gameState.running = false;
+            playTrainSound();
+            const train = document.getElementById('train');
+            train.style.transition = 'left 2s linear';
+            train.style.left = '2000px'; 
+            gameState.enemies.forEach(e => { if(e.el) e.el.remove(); });
+            setTimeout(() => { document.getElementById('win-screen').classList.remove('hidden'); }, 2000);
+        }
+
+        function gameOver() {
+            gameState.running = false;
+            document.getElementById('game-over-screen').classList.remove('hidden');
+        }
+
+        window.addEventListener('resize', () => { });
+
+    </script>
+</body>
+</html>
