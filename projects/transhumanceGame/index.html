@@ -65,6 +65,7 @@
             justify-content: center;
             align-items: flex-end;
             z-index: 2;
+            transition: transform 0.3s; /* Плавное изменение при ресайзе */
         }
 
         /* Окна башни */
@@ -97,7 +98,6 @@
             font-size: 10px;
             color: black;
             font-weight: bold;
-            /* Улучшение для тача */
             touch-action: manipulation; 
         }
         #generator.broken {
@@ -138,7 +138,6 @@
             z-index: 5;
             cursor: pointer;
             box-shadow: 0 0 5px #000;
-            /* Улучшение для тача */
             touch-action: manipulation;
         }
         
@@ -358,6 +357,30 @@
 
         /* --- АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ --- */
         @media (max-width: 768px) {
+            /* Визуальное отдаление: уменьшаем размеры объектов, чтобы они занимали меньше экрана */
+            #tower {
+                width: 55px; /* Было 80 */
+                /* transform: scale(0.7) translateY(20%); - лучше менять размеры напрямую для точности */
+            }
+
+            #generator {
+                width: 35px; /* Было 40-60 */
+                height: 25px;
+                bottom: 5px;
+            }
+
+            #metal-rail {
+                width: 35px; /* Было 40-60 */
+                height: 80px;
+                bottom: 90px;
+            }
+
+            #light-barrier {
+                width: 200px; /* Было 300 */
+                height: 150px;
+            }
+
+            /* Меню и текст */
             .game-title { 
                 font-size: 40px; 
                 margin-bottom: 20px; 
@@ -365,7 +388,7 @@
             
             #main-menu { 
                 padding-left: 20px; 
-                align-items: center; /* Центрируем меню на телефоне */
+                align-items: center; 
             }
 
             .menu-buttons button { 
@@ -376,35 +399,22 @@
             }
             
             .menu-buttons button:hover {
-                padding-left: 12px; /* Убираем сдвиг на тачскринах */
+                padding-left: 12px; 
             }
 
-            /* Увеличиваем игровые объекты для пальцев */
-            #generator {
-                width: 60px;
-                height: 45px;
-                bottom: 10px;
-                font-size: 14px;
-            }
-
-            #metal-rail {
-                width: 60px;
-                height: 120px;
-                bottom: 130px;
-            }
-
+            /* UI */
             #ui-layer {
                 font-size: 12px;
                 width: 100%;
             }
             
             .bar-container {
-                width: 140px;
+                width: 130px;
             }
 
             #timer-display {
                 font-size: 18px;
-                top: 50px; /* Чтобы не перекрывать бары */
+                top: 55px;
                 left: 20px;
                 right: auto;
             }
@@ -414,11 +424,11 @@
                 padding: 0 10px;
             }
 
-            /* Корректировка позиций туториала */
+            /* Корректировка подсказок */
             .pos-rail {
                 left: 50%;
                 transform: translateX(-50%);
-                bottom: 300px;
+                bottom: 220px;
             }
             .pos-gen {
                 right: auto;
@@ -588,6 +598,8 @@
             } else {
                 // Если это пауза (после 2 туториала)
                 gameState.running = true;
+                // Сбрасываем lastFrameTime, чтобы не было скачка
+                lastFrameTime = performance.now();
                 requestAnimationFrame(gameLoop);
             }
         }
@@ -597,7 +609,7 @@
         const MAX_HP = 100;
         const MAX_STAMINA = 100;
         const STAMINA_COST = 25;
-        const STAMINA_REGEN = 0.1; // 0.1 как просили
+        const STAMINA_REGEN = 0.1; 
         const ENEMY_SPEED = 1.5;
         const SOUND_RANGE = 300; 
         
@@ -704,7 +716,9 @@
         function startGame() {
             gameState.started = true;
             gameState.running = true;
-            gameLoop();
+            // Инициализируем время для дельта-тайма
+            lastFrameTime = performance.now();
+            gameLoop(lastFrameTime);
             
             const timerInterval = setInterval(() => {
                 if (!gameState.running) return; // Пауза таймера если игра на паузе (обучение)
@@ -734,7 +748,6 @@
 
         // ОБЩАЯ ФУНКЦИЯ УДАРА (для мыши и тача)
         function tryHit(e) {
-            // Предотвращаем дефолтное поведение для тача (скролл, зум)
             if (e.type === 'touchstart') e.preventDefault();
             
             if (!gameState.running) return;
@@ -765,12 +778,31 @@
             }
         }
 
-        // КЛИК ПО РЕЛЬСЕ (Mouse + Touch)
         railEl.addEventListener('mousedown', tryHit);
         railEl.addEventListener('touchstart', tryHit);
 
-        function gameLoop() {
-            if (!gameState.running) return;
+        // --- ГЕЙМЛУП С DELTA TIME ---
+        let lastFrameTime = 0;
+
+        function gameLoop(timestamp) {
+            if (!gameState.running) {
+                lastFrameTime = timestamp; 
+                return;
+            }
+
+            // Вычисляем дельту времени (в секундах)
+            // timestamp может быть не определен при первом вызове
+            if (!timestamp) timestamp = performance.now();
+            let dt = (timestamp - lastFrameTime) / 1000;
+            lastFrameTime = timestamp;
+
+            // Защита от слишком больших скачков (например, переключение вкладок)
+            if (dt > 0.1 || dt < 0) dt = 0.016; 
+
+            // Нормализатор скорости относительно 60 FPS
+            // Если экран 60Гц, dt = 0.016, scale = 1.
+            // Если экран 120Гц, dt = 0.008, scale = 0.5.
+            const fpsScale = dt * 60; 
 
             // Проверка на Туториал 2 (Мало стамины)
             if (gameState.stamina <= 20 && !tutorial2Shown) {
@@ -778,14 +810,14 @@
                 return; // Прерываем цикл
             }
 
-            // Регенерация стамины
+            // Регенерация стамины (учитываем время)
             if (gameState.stamina < MAX_STAMINA) {
-                gameState.stamina += STAMINA_REGEN;
+                gameState.stamina += STAMINA_REGEN * fpsScale;
             }
 
             // Починка генератора
             if (gameState.genBroken) {
-                gameState.genTimer -= 16; 
+                gameState.genTimer -= dt * 1000; 
                 if (gameState.genTimer <= 0) {
                     gameState.genBroken = false;
                     genEl.classList.remove('broken');
@@ -796,24 +828,35 @@
             // Спавн
             let spawnRate = 100 - (60 - gameState.timeLeft); 
             if (spawnRate < 20) spawnRate = 20;
-            if (Math.random() * 100 < (100 / spawnRate) + 1) spawnEnemy();
+            
+            // Корректируем шанс спавна под FPS
+            // Чем больше FPS, тем меньше шанс за кадр, чтобы сохранить общую частоту
+            if (Math.random() * 100 < ((100 / spawnRate) + 1) * fpsScale) {
+                spawnEnemy();
+            }
 
             // Движение
             const towerCenter = window.innerWidth / 2;
-            const towerWidth = 80;
-            
+            // Учитываем визуальный размер башни на мобилках
+            const isMobile = window.innerWidth <= 768;
+            const towerWidth = isMobile ? 55 : 80;
+            const barrierRadius = isMobile ? 100 : 150; // Половина ширины барьера
+
             gameState.enemies.forEach((enemy, index) => {
                 if (enemy.dead) return;
                 const distToCenter = Math.abs(enemy.x - towerCenter);
+                
                 let blockedByLight = false;
-                if (gameState.genActive && distToCenter <= LIGHT_RADIUS) blockedByLight = true;
+                if (gameState.genActive && distToCenter <= barrierRadius) blockedByLight = true;
 
                 if (!blockedByLight) {
+                    const moveAmount = ENEMY_SPEED * fpsScale;
+                    
                     if (enemy.side === 'left') {
-                        if (enemy.x < towerCenter - towerWidth/2) enemy.x += ENEMY_SPEED;
+                        if (enemy.x < towerCenter - towerWidth/2) enemy.x += moveAmount;
                         else damageTower();
                     } else {
-                        if (enemy.x > towerCenter + towerWidth/2) enemy.x -= ENEMY_SPEED;
+                        if (enemy.x > towerCenter + towerWidth/2) enemy.x -= moveAmount;
                         else damageTower();
                     }
                     enemy.el.style.left = enemy.x + 'px';
