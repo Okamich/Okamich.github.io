@@ -333,6 +333,35 @@
             text-shadow: 0 0 5px black;
         }
 
+        /* НОВЫЕ ПОЗИЦИИ ДЛЯ СТАМИНЫ И HP */
+        .pos-hp {
+            top: 80px;
+            left: 50px;
+        }
+        .pos-hp::after {
+            content: "↑";
+            font-size: 40px;
+            position: absolute;
+            top: -40px;
+            left: 20px;
+            color: white;
+            text-shadow: 0 0 5px black;
+        }
+
+        .pos-stamina {
+            top: 150px;
+            left: 50px;
+        }
+        .pos-stamina::after {
+            content: "↑";
+            font-size: 40px;
+            position: absolute;
+            top: -40px;
+            left: 20px;
+            color: white;
+            text-shadow: 0 0 5px black;
+        }
+
         #intro-text {
             font-size: 22px;
             max-width: 600px;
@@ -352,8 +381,6 @@
             font-family: inherit;
         }
         .game-btn:hover { background: #b71c1c; }
-
-        .hidden { display: none !important; }
 
         /* --- АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ --- */
         @media (max-width: 768px) {
@@ -558,20 +585,22 @@
             } else {
                 // Конец интро - СТАРТ ИГРЫ
                 document.getElementById('intro-screen').classList.add('hidden');
-                startTutorial1(); // Запускаем первый туториал вместо геймплея
+                startTutorial1(); // Запускаем первый туториал
             }
         }
 
         // --- ЛОГИКА ОБУЧЕНИЯ ---
         let tutorial2Shown = false;
+        let currentTutorialStep = 0; // 0=none, 1=Rail, 2=Stamina, 3=HP
 
         function startTutorial1() {
+            currentTutorialStep = 1; // Шаг 1: Рельса
             const overlay = document.getElementById('tutorial-overlay');
             const box = document.getElementById('tutorial-box');
             const text = document.getElementById('tutorial-text');
 
             overlay.classList.remove('hidden');
-            box.className = 'tutorial-box pos-rail'; // Позиция у рельсы
+            box.className = 'tutorial-box pos-rail'; 
             text.innerHTML = "Бей в сигнальную рельсу! <br>Им страшен только громкий звук, он дробит их сущность";
         }
 
@@ -585,20 +614,51 @@
             const text = document.getElementById('tutorial-text');
 
             overlay.classList.remove('hidden');
-            box.className = 'tutorial-box pos-gen'; // Позиция у генератора
+            box.className = 'tutorial-box pos-gen'; 
             text.innerHTML = "Машка — врубай генератор. <br>Свет их ненадолго задержит, а ты Гость, передохни, но не зевай! Свет не вечен — генератор ломается.";
         }
 
-        function closeTutorial() {
-            document.getElementById('tutorial-overlay').classList.add('hidden');
+        function showStaminaTutorial() {
+            currentTutorialStep = 2; // Шаг 2: Выносливость
+            const box = document.getElementById('tutorial-box');
+            const text = document.getElementById('tutorial-text');
             
+            box.className = 'tutorial-box pos-stamina';
+            text.innerHTML = "Бей только когда они рядом, иначе звук до них не достанет и ты потратишь силы впустую!";
+        }
+
+        function showHpTutorial() {
+            currentTutorialStep = 3; // Шаг 3: HP
+            const box = document.getElementById('tutorial-box');
+            const text = document.getElementById('tutorial-text');
+            
+            box.className = 'tutorial-box pos-hp';
+            text.innerHTML = "Если прочность двери опустится до минимума, то мы все обречены...";
+        }
+
+        function closeTutorial() {
+            // Если мы в фазе начального обучения
             if (!gameState.started) {
-                // Если игра еще не начиналась (после 1 туториала)
-                startGame();
+                if (currentTutorialStep === 1) {
+                    // После рельсы показываем выносливость
+                    showStaminaTutorial();
+                    return;
+                }
+                if (currentTutorialStep === 2) {
+                    // После выносливости показываем HP
+                    showHpTutorial();
+                    return;
+                }
+                if (currentTutorialStep === 3) {
+                    // После HP начинаем игру
+                    document.getElementById('tutorial-overlay').classList.add('hidden');
+                    startGame();
+                    return;
+                }
             } else {
-                // Если это пауза (после 2 туториала)
+                // Если это пауза (туториал 2 про генератор)
+                document.getElementById('tutorial-overlay').classList.add('hidden');
                 gameState.running = true;
-                // Сбрасываем lastFrameTime, чтобы не было скачка
                 lastFrameTime = performance.now();
                 requestAnimationFrame(gameLoop);
             }
