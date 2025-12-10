@@ -1,0 +1,101 @@
+/* --- ОСНОВНЫЕ НАСТРОЙКИ --- */
+body { margin: 0; overflow: hidden; background-color: #050505; color: white; font-family: 'Courier New', Courier, monospace; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+#game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #0a0a10 0%, #1a1a20 80%, #eee 100%); }
+
+/* --- UI --- */
+#ui-layer { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
+.bar-container { margin-bottom: 10px; background: #333; width: 200px; height: 20px; border: 2px solid #555; }
+#hp-bar { background: #d32f2f; width: 100%; height: 100%; transition: width 0.2s;}
+#stamina-bar { background: #1976d2; width: 100%; height: 100%; transition: width 0.1s;}
+#timer-display { position: absolute; top: 20px; right: 20px; font-size: 24px; color: #ffeb3b; }
+
+/* --- НОЧНОЙ РЕЖИМ --- */
+#night-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+#tower { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 80px; height: 300px; background: #2c2c2c; border: 2px solid #111; display: flex; justify-content: center; align-items: flex-end; z-index: 2; }
+.window { width: 20px; height: 30px; background: #ffaa00; margin-bottom: 150px; opacity: 0.5; box-shadow: 0 0 10px #ffaa00; animation: flicker 3s infinite; }
+#generator { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 40px; height: 30px; background: #4caf50; border: 2px solid #000; z-index: 6; cursor: pointer; box-shadow: 0 0 5px #000; display: flex; justify-content: center; align-items: center; font-size: 10px; color: black; font-weight: bold; touch-action: manipulation; }
+#generator.broken { background: #d32f2f; cursor: not-allowed; }
+#light-barrier { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 300px; height: 200px; background: radial-gradient(circle, rgba(255, 255, 200, 0.4) 0%, rgba(255, 200, 0, 0) 70%); z-index: 4; pointer-events: none; display: none; opacity: 0; transition: opacity 0.5s; }
+#light-barrier.active { display: block; opacity: 1; }
+#metal-rail { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); width: 40px; height: 100px; background: linear-gradient(90deg, #555, #888, #555); border: 1px solid #000; z-index: 5; cursor: pointer; box-shadow: 0 0 5px #000; touch-action: manipulation; }
+#metal-rail:active { transform: translateX(-50%) scale(0.95); background: #aaa; }
+#metal-rail::after { content: "БЕЙ!"; position: absolute; top: -30px; left: -10px; color: white; font-size: 14px; font-weight: bold; animation: bounce 1s infinite; }
+.enemy { position: absolute; bottom: 50px; width: 40px; height: 30px; background: black; border-radius: 50% 50% 0 0; z-index: 3; transition: transform 0.1s; }
+.enemy::before, .enemy::after { content: ''; position: absolute; top: 10px; width: 4px; height: 4px; background: red; border-radius: 50%; box-shadow: 0 0 4px red; }
+.enemy::before { left: 10px; } .enemy::after { right: 10px; }
+.sound-wave { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); width: 10px; height: 10px; border: 5px solid rgba(255, 255, 255, 0.8); border-radius: 50%; opacity: 1; z-index: 4; pointer-events: none; }
+#train { position: absolute; bottom: 0; left: -2000px; width: 1500px; height: 400px; background: #000; z-index: 20; display: flex; align-items: center; }
+.headlight { position: absolute; right: 0; top: 250px; width: 50px; height: 50px; background: white; border-radius: 50%; box-shadow: 0 0 500px 200px white; }
+
+/* --- ЭКРАНЫ --- */
+#intro-screen, #start-screen, #game-over-screen, #win-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; padding: 20px; box-sizing: border-box; }
+#main-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding-left: 10%; z-index: 200; }
+.game-title { font-size: 80px; color: #d32f2f; text-shadow: 4px 4px 0 #000; margin-bottom: 50px; letter-spacing: 5px; }
+.menu-buttons button { display: block; width: 300px; text-align: left; margin: 15px 0; padding: 15px 20px; background: transparent; border: 2px solid #555; color: white; font-size: 24px; cursor: pointer; transition: all 0.2s; }
+.menu-buttons button:hover { background: #d32f2f; border-color: #d32f2f; padding-left: 30px; }
+#tutorial-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 90; display: flex; justify-content: center; align-items: center; }
+.tutorial-box { position: absolute; background: rgba(255, 255, 255, 0.95); color: black; padding: 20px; max-width: 300px; border-radius: 5px; box-shadow: 0 0 20px black; text-align: center; animation: bounce 2s infinite; }
+.tutorial-box p { margin: 0 0 10px 0; font-weight: bold; }
+.pos-rail { bottom: 250px; left: 60%; } .pos-rail::after { content: "↙"; font-size: 40px; position: absolute; bottom: -30px; left: 10px; color: white; }
+.pos-gen { bottom: 100px; right: 55%; } .pos-gen::after { content: "↘"; font-size: 40px; position: absolute; bottom: -30px; right: 10px; color: white; }
+.pos-hp { top: 90px; left: 100px; } .pos-hp::after { content: "↑"; font-size: 40px; position: absolute; top: -40px; left: 20px; color: white; }
+.pos-stamina { top: 160px; left: 100px; } .pos-stamina::after { content: "↑"; font-size: 40px; position: absolute; top: -40px; left: 20px; color: white; }
+#intro-text { font-size: 22px; max-width: 600px; line-height: 1.5; margin-bottom: 30px; min-height: 100px; }
+.game-btn { padding: 15px 30px; font-size: 20px; background: #d32f2f; color: white; border: none; cursor: pointer; margin-top: 20px; font-family: inherit; }
+
+/* --- ДНЕВНОЙ РЕЖИМ --- */
+#day-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%); z-index: 50; display: flex; justify-content: center; align-items: center; }
+#day-ui-header { position: absolute; top: 20px; left: 0; width: 100%; text-align: center; color: #333; font-size: 24px; font-weight: bold; pointer-events: none; }
+.tower-section { width: 200px; background: #5d4037; border: 4px solid #3e2723; margin-bottom: 5px; position: relative; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #fff; text-shadow: 1px 1px 0 #000; box-shadow: 5px 5px 15px rgba(0,0,0,0.3); }
+.room-label { font-size: 12px; opacity: 0.7; position: absolute; top: 5px; left: 5px; }
+#room-attic { height: 80px; background: #4e342e; border-radius: 50% 50% 0 0; } #room-living { height: 120px; background: #6d4c41; } #room-main { height: 120px; background: #5d4037; } #room-basement { height: 80px; background: #3e2723; border-radius: 0 0 10px 10px; margin-top: 0; }
+.activity-btn { background: rgba(0,0,0,0.5); border: 1px solid #fff; color: white; padding: 5px 10px; font-size: 14px; cursor: pointer; margin: 5px; transition: transform 0.1s; }
+.activity-btn:hover { transform: scale(1.05); background: rgba(0,0,0,0.8); }
+
+/* --- МИНИ-ИГРЫ (ОБНОВЛЕННЫЕ) --- */
+#mini-game-modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 60; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
+.mg-content { background: #333; padding: 20px; border: 2px solid #888; text-align: center; width: 90%; max-width: 400px; position: relative; }
+.mg-game-area { width: 100%; height: 300px; background: #222; margin: 20px 0; border: 1px solid #555; position: relative; overflow: hidden; user-select: none; }
+.hidden { display: none !important; }
+
+/* 1. ПОИСК */
+#scavenge-header { height: 40px; background: #333; display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #555; gap: 10px; }
+.target-preview { width: 25px; height: 25px; border: 1px solid #fff; opacity: 0.5; }
+.target-preview.found { opacity: 1; border-color: #4caf50; box-shadow: 0 0 5px #4caf50; }
+#flashlight { position: absolute; width: 100px; height: 100px; border-radius: 50%; box-shadow: 0 0 0 1000px black; pointer-events: none; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,0.2); z-index: 10; }
+.scav-obj { position: absolute; z-index: 5; cursor: pointer; box-sizing: border-box; }
+.shape-square { width: 30px; height: 30px; }
+.shape-circle { width: 30px; height: 30px; border-radius: 50%; }
+.shape-triangle { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 30px solid currentColor; background: transparent !important; }
+
+/* 2. ГАЙКИ */
+.bolt-container { display: flex; justify-content: center; align-items: flex-end; height: 100%; padding-bottom: 20px; }
+.bolt-column { width: 40px; height: 200px; background: repeating-linear-gradient(45deg, #555, #555 5px, #444 5px, #444 10px); border: 2px solid #777; border-radius: 5px 5px 0 0; margin: 0 20px; position: relative; display: flex; flex-direction: column-reverse; align-items: center; cursor: pointer; }
+.nut { width: 50px; height: 20px; margin-bottom: 2px; border-radius: 4px; border: 2px solid rgba(0,0,0,0.5); z-index: 2; transition: transform 0.2s; }
+.nut.red { background: #e53935; } .nut.blue { background: #1e88e5; }
+.nut.selected { border-color: white; transform: scale(1.1); box-shadow: 0 0 10px white; }
+
+/* 3. ЖИДКОСТИ */
+.lab-table { display: flex; justify-content: space-around; align-items: flex-end; height: 100%; padding-bottom: 30px; }
+.lab-tool { width: 60px; height: 60px; border: 2px dashed #666; display: flex; justify-content: center; align-items: center; font-size: 10px; cursor: pointer; background: #333; transition: all 0.2s; }
+.lab-tool.selected { border-color: #00bcd4; background: #004d40; }
+.icon-tap::after { content: "🚰 КРАН"; font-size: 20px; } .icon-sink::after { content: "🚽 СЛИВ"; font-size: 20px; }
+.flask { width: 60px; height: 150px; border: 3px solid rgba(255,255,255,0.5); border-top: none; border-radius: 0 0 10px 10px; position: relative; background: rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s; }
+.flask.selected { border-color: #00bcd4; transform: scale(1.05); }
+.liquid { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0, 188, 212, 0.8); transition: height 0.5s ease-in-out; border-radius: 0 0 7px 7px; }
+.flask-label { position: absolute; width: 100%; text-align: center; top: 50%; transform: translateY(-50%); text-shadow: 0 0 3px black; pointer-events: none; }
+.target-line { position: absolute; width: 100%; height: 2px; background: #f44336; z-index: 10; left: 0; }
+
+/* 4. ТЕТРИС */
+.inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; width: 200px; margin: 20px auto; background: #3e2723; border: 4px solid #5d4037; padding: 2px; }
+.inv-cell { width: 48px; height: 48px; background: #281915; border: 1px solid #3e2723; }
+.inv-cell.filled { background: #8d6e63; border-color: #a1887f; box-shadow: inset 0 0 5px #000; }
+.inv-items-pool { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.inv-item-source { background: #8d6e63; border: 2px solid #fff; cursor: pointer; position: relative; }
+.inv-item-source.selected { border-color: #ffeb3b; transform: scale(1.1); }
+
+/* --- АДАПТИВНОСТЬ --- */
+@media (max-width: 768px) { #tower { width: 55px; } #generator { width: 35px; height: 25px; bottom: 5px; } .game-title { font-size: 40px; margin-bottom: 20px; } #main-menu { padding-left: 20px; align-items: center; } .menu-buttons button { width: 80vw; font-size: 18px; padding: 12px; text-align: center; } .tower-section { width: 90vw; } }
+@keyframes flicker { 0% {opacity:0.5;} 50% {opacity:0.8;} 100% {opacity:0.5;} }
+@keyframes bounce { 0%, 100% {transform: translateY(0);} 50% {transform: translateY(-5px);} }
+@keyframes shockwave { 0% { width: 10px; height: 10px; opacity: 1; border-width: 10px;} 100% { width: 1000px; height: 1000px; opacity: 0; border-width: 0px;} }
