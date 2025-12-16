@@ -19,6 +19,13 @@
         </div>
         <div id="timer-display">ДО ПОЕЗДА: 60 сек</div>
 
+        <!-- ЭФФЕКТЫ АТМОСФЕРЫ -->
+        <div id="snow-container"></div>
+        <div id="frost-overlay"></div>
+
+        <!-- СЛОИ ДЕБАГА -->
+        <div id="debug-layer" style="pointer-events: none; width: 100%; height: 100%; position: absolute; z-index: 50;"></div>
+
         <!-- НОЧНОЙ СЛОЙ -->
         <div id="night-layer">
             <div id="tower">
@@ -32,25 +39,48 @@
         </div>
 
         <!-- ДНЕВНОЙ СЛОЙ -->
-        <div id="day-screen" class="hidden">
+        <div id="day-screen" class="hidden morning">
+            <div id="sky-sun"></div>
             <div id="day-ui-header">ДЕНЬ 1: УТРО</div>
-            <div style="display:flex; flex-direction:column; align-items:center;">
+            
+            <div id="day-tower-wrapper">
                 <div id="room-attic" class="tower-section">
-                    <span class="room-label">ЧЕРДАК (СВЕТ)</span>
-                    <div style="font-size:10px;">[Активности позже]</div>
+                    <div class="room-visual">
+                        <div class="attic-window left"></div><div class="attic-window right"></div>
+                        <div class="furniture chair-bed"></div><div class="furniture table-small"></div><div class="stairs"></div>
+                    </div>
+                    <span class="room-label">ЧЕРДАК</span>
+                    <div class="btn-overlay"><div style="font-size:10px;">[Обзор]</div></div>
                 </div>
                 <div id="room-living" class="tower-section">
+                    <div class="room-visual split-room">
+                        <div class="zone zone-bed-m"><div class="bed"><div class="wounded-guy"></div></div></div>
+                        <div class="zone zone-kitchen"><div class="stove-pipe"></div><div class="stove"></div><div class="table-dinner"></div></div>
+                        <div class="zone zone-bed-f"><div class="bed"></div><div class="flower-pot">🌻</div></div><div class="stairs"></div>
+                    </div>
                     <span class="room-label">ЖИЛАЯ КОМНАТА</span>
-                    <button class="activity-btn" onclick="startActivity('heal')">ПЕРЕВЯЗКА (+Жизнь)</button>
-                    <button class="activity-btn" onclick="startActivity('rest')">ТЕТРИС (+Силы)</button>
+                    <div class="btn-overlay">
+                        <button id="btn-heal" class="activity-btn" onclick="startActivity('heal')">ПЕРЕВЯЗКА (+Жизнь)</button>
+                        <button id="btn-funeral" class="activity-btn hidden" onclick="startActivity('funeral')" style="border-color: #555; color: #aaa;">ПОХОРОНЫ (-1 ДЕЙСТВ)</button>
+                        <button class="activity-btn" onclick="startActivity('rest')">РЮКЗАК (+Силы)</button>
+                    </div>
                 </div>
                 <div id="room-main" class="tower-section">
+                    <div class="room-visual">
+                        <div class="hanging-rail"></div><div class="diesel-gen">⚡</div><div class="workbench-table"></div><div class="stairs"></div>
+                    </div>
                     <span class="room-label">ОСНОВНОЕ ПОМЕЩЕНИЕ</span>
-                    <button class="activity-btn" onclick="startActivity('upgrade')">ВЕРСТАК (+Рельса)</button>
+                    <div class="btn-overlay">
+                        <button id="btn-repair" class="activity-btn hidden" onclick="startActivity('repair')">ПОЧИНКА (+HP)</button>
+                        <button class="activity-btn" onclick="startActivity('upgrade')">ВЕРСТАК (+Рельса)</button>
+                    </div>
                 </div>
                 <div id="room-basement" class="tower-section">
+                    <div class="room-visual basement-style">
+                        <div class="shelf shelf-1"></div><div class="shelf shelf-2"></div><div class="box box-1"></div><div class="box box-2"></div>
+                    </div>
                     <span class="room-label">ПОДВАЛ</span>
-                    <button class="activity-btn" onclick="startActivity('scavenge')">ПОИСК (+Ресурс)</button>
+                    <div class="btn-overlay"><button class="activity-btn" onclick="startActivity('scavenge')">ПОИСК (+Ресурс)</button></div>
                 </div>
             </div>
         </div>
@@ -64,13 +94,42 @@
                 <button id="mg-close-btn" class="game-btn hidden" onclick="closeMiniGame()">ЗАВЕРШИТЬ</button>
             </div>
         </div>
-
+        
         <!-- ОВЕРЛЕЙ ОБУЧЕНИЯ -->
         <div id="tutorial-overlay" class="hidden">
             <div id="tutorial-box" class="tutorial-box">
                 <p id="tutorial-text">Текст подсказки</p>
                 <button class="game-btn" onclick="closeTutorial()">ПОНЯЛ</button>
             </div>
+        </div>
+
+        <!-- ДЕБАГ ИНТЕРФЕЙС -->
+        <button id="debug-toggle-btn" class="hidden" onclick="toggleDebugMenu()">⚙️ DEV</button>
+        <div id="debug-menu" class="hidden">
+            <h3>DEBUG MENU</h3>
+            <div class="debug-section">
+                <button onclick="skipNight()">Пропустить Ночь (Win)</button>
+                <button onclick="skipDay()">Пропустить День</button>
+                <button onclick="killAllEnemies()">Убить всех врагов</button>
+            </div>
+            <div class="debug-section">
+                <label><input type="checkbox" onchange="toggleFlag('guyActive', this.checked)"> Парень Здоров (guyActive)</label><br>
+                <label><input type="checkbox" onchange="toggleFlag('isGuyDead', this.checked)"> Парень Мертв (isGuyDead)</label><br>
+                <label><input type="checkbox" onchange="toggleFlag('infStats', this.checked)"> Беск. HP/Stamina</label><br>
+                <label><input type="checkbox" onchange="toggleFlag('infAP', this.checked)"> Беск. Очки Действий</label>
+            </div>
+            <div class="debug-section">
+                <label><input type="checkbox" onchange="toggleVisual('atk', this.checked)"> Показать Радиус Атаки</label>
+                <input type="range" min="100" max="600" value="300" oninput="setRadius('atk', this.value)"> <span id="val-atk">300</span><br>
+                
+                <label><input type="checkbox" onchange="toggleVisual('light', this.checked)"> Показать Радиус Света</label>
+                <input type="range" min="50" max="400" value="150" oninput="setRadius('light', this.value)"> <span id="val-light">150</span>
+            </div>
+            <div class="debug-section">
+                День: <input type="number" id="debug-day-input" value="1" style="width: 40px;"> 
+                <button onclick="setDay()">Set</button>
+            </div>
+            <button onclick="toggleDebugMenu()" style="background:#555;">ЗАКРЫТЬ</button>
         </div>
 
     </div>
@@ -80,30 +139,54 @@
         <h1 class="game-title">ПЕРЕГОН</h1>
         <div class="menu-buttons">
             <button onclick="startFromMenu()">НАЧАТЬ ИГРУ</button>
-            <button onclick="startDemoMode()" style="border-color: #ffeb3b; color: #ffeb3b;">ДЕМО: МИНИ-ИГРЫ</button>
+            <button id="btn-demo-mode" class="hidden" onclick="startDemoMode()" style="border-color: #ffeb3b; color: #ffeb3b;">ДЕМО: МИНИ-ИГРЫ</button>
+            <button id="btn-test-menu" class="hidden" onclick="openMiniGameTestMenu()" style="border-color: #00bcd4; color: #00bcd4;">ТЕСТ МИНИ-ИГР</button>
             <button onclick="alert('В разработке')">ЗАГРУЗИТЬ</button>
             <button onclick="alert('В разработке')">НАСТРОЙКИ</button>
             <button onclick="alert('Разработчик: AI & User')">КРЕДИТЫ</button>
             <button onclick="alert('Для выхода закройте вкладку')">ВЫХОД</button>
         </div>
     </div>
+    
+    <!-- МЕНЮ ТЕСТА МИНИ-ИГР -->
+    <div id="minigame-test-menu" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #222; z-index: 210; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h2>ТЕСТ МИНИ-ИГР</h2>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; max-width:600px; justify-content:center;">
+            <button class="game-btn" onclick="startActivity('scavenge', true)">ПОИСК</button>
+            <button class="game-btn" onclick="startActivity('upgrade', true)">СОРТИРОВКА (Улучшение)</button>
+            <button class="game-btn" onclick="startActivity('repair', true)">РЕМОНТ</button>
+            <button class="game-btn" onclick="startActivity('heal', true)">СИНТЕЗ (Лечение)</button>
+            <button class="game-btn" onclick="startActivity('rest', true)">РЮКЗАК (Отдых)</button>
+            <button class="game-btn" onclick="startActivity('funeral', true)">ПОХОРОНЫ</button>
+        </div>
+        <button class="game-btn" onclick="closeMiniGameTestMenu()" style="margin-top:20px; background:#555;">НАЗАД В МЕНЮ</button>
+    </div>
 
     <!-- ЭКРАНЫ СОСТОЯНИЙ -->
     <div id="intro-screen" class="hidden">
+        <!-- ИЗОБРАЖЕНИЕ ДЛЯ НОВЕЛЛЫ -->
+        <img id="intro-img" class="vn-image hidden" src="" alt="">
         <p id="intro-text">Загрузка...</p>
         <button class="game-btn" onclick="nextIntro()">ДАЛЕЕ</button>
     </div>
 
+    <!-- ЭКРАН НАЧАЛА НОЧИ -->
+    <div id="night-start-screen" class="hidden">
+        <h1 id="ns-title" style="color: #d32f2f">СУМЕРКИ</h1>
+        <p>Солнце зашло. Тени приближаются к башне.<br>Приготовьтесь к обороне.</p>
+        <button class="game-btn" onclick="confirmStartNight()">К БОЮ</button>
+    </div>
+
     <div id="game-over-screen" class="hidden">
-        <h1 style="color: #d32f2f">ОНИ ПРОРВАЛИСЬ</h1>
-        <p>Дверь сломана. Света больше нет.</p>
+        <h1 id="go-title" style="color: #d32f2f">ОНИ ПРОРВАЛИСЬ</h1>
+        <p id="go-desc">Дверь сломана. Света больше нет.</p>
         <button class="game-btn" onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
     </div>
 
     <div id="win-screen" class="hidden">
-        <h1 style="color: #4caf50">ПОЕЗД ПРИБЫЛ</h1>
-        <p>Звук гудка разорвал тьму.<br>Твари исчезли. Вы дожили до утра.</p>
-        <button class="game-btn" onclick="startDayPhase()">НАЧАТЬ ДЕНЬ</button>
+        <h1 id="win-title" style="color: #4caf50">ПОЕЗД ПРИБЫЛ</h1>
+        <p id="win-desc">Звук гудка разорвал тьму.<br>Твари исчезли. Вы дожили до утра.</p>
+        <button id="btn-next-day" class="game-btn" onclick="startDayPhase()">НАЧАТЬ ДЕНЬ</button>
     </div>
 
     <script src="js/state.js"></script>

@@ -10,6 +10,7 @@ const BASE_SOUND_RANGE = 300;
 const GEN_DURATION = 5000; 
 const GEN_COOLDOWN = 10000; 
 const LIGHT_RADIUS = 150; 
+const FINAL_DAY = 5; 
 
 let gameState = {
     started: false,
@@ -26,9 +27,32 @@ let gameState = {
     genBroken: false,
     genTimer: 0,
     
-    // Новые параметры
     railPower: 1.0, 
     inventory: {
         batteries: 0 
-    }
+    },
+    
+    healsDone: 0,         
+    guyActive: false,     
+    extraActionUsed: false, 
+    
+    healedToday: false,   
+    daysIgnored: 0,       
+    isGuyDead: false,     
+    funeralPerformed: false, 
+    preparationScore: 0,  
+
+    staminaRegenMod: 1.0, 
+    
+    waves: [],
+    
+    // DEBUG FLAGS
+    debugMode: false, // Глобальный флаг дебага (для отображения кнопки)
+    infStats: false,  // Бесконечные HP и Stamina
+    infAP: false,     // Бесконечные очки действий днем
+    testMinigameMode: false // Активен ли режим теста МГ
 };
+
+// Переменные для визуализации дебаг радиусов
+let debugRadiusAtk = BASE_SOUND_RANGE;
+let debugRadiusLight = LIGHT_RADIUS;

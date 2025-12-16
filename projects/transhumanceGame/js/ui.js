@@ -2,34 +2,107 @@
 
 function startFromMenu() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    document.getElementById('mini-game-modal').classList.add('hidden');
+    document.getElementById('minigame-test-menu').classList.add('hidden');
+    gameState.testMinigameMode = false;
+
     document.getElementById('main-menu').classList.add('hidden');
     document.getElementById('intro-screen').classList.remove('hidden');
+    
+    updateIntroSlide();
 }
 
 function startDemoMode() {
     if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    document.getElementById('mini-game-modal').classList.add('hidden');
+    document.getElementById('minigame-test-menu').classList.add('hidden');
+    gameState.testMinigameMode = false;
+
     document.getElementById('main-menu').classList.add('hidden');
     startDayPhase();
 }
 
+function openMiniGameTestMenu() {
+    document.getElementById('minigame-test-menu').classList.remove('hidden');
+}
+function closeMiniGameTestMenu() {
+    document.getElementById('minigame-test-menu').classList.add('hidden');
+}
+
+function showNightStartScreen() {
+    document.getElementById('night-start-screen').classList.remove('hidden');
+    document.getElementById('ns-title').innerText = `СУМЕРКИ: ДЕНЬ ${gameState.currentDay}`;
+}
+
+function confirmStartNight() {
+    document.getElementById('night-start-screen').classList.add('hidden');
+    
+    document.getElementById('night-layer').classList.remove('hidden');
+    document.getElementById('ui-layer').classList.remove('hidden');
+    
+    const train = document.getElementById('train');
+    train.style.transition = 'none';
+    train.style.left = '-2000px';
+
+    startGame(); 
+}
+
+// --- НОВАЯ СТРУКТУРА СЛАЙДОВ (ТЕКСТ + КАРТИНКА) ---
+// Пример: { text: "Текст", img: "img/slide1.jpg" }
 const introSlides = [
-    "Метель застала тебя в пути на станцию. Начало вечереть, а солнце уже опускалось за горизонт.<br>Ты замерзал в лесу, пока не набрел на старую башню смотрителя Ж/Д станции.",
-    "В надежде, ты дернул ручку но дверь оказалась заперта. «Эй, есть кто дома!?», - ты крикнул и сильно постучал в дверь.",
-    "Ты уже собрался было идти дальше, как внезапно, дверь открылась и в узкой щели дверного проема ты увидел красивую девушку в тулупе явно не её размера. «Эм, мне бы ...», - не успел ты закончить фразу, как дверь открылась и девушка, с силой втянула тебя внутрь",
-    "Закрыв за тобой дверь, она забаррикадировала её тяжелыми ящиками и столом, а затем взяв тебя за руку поспешила наверх башни.",
-    "Наверху ты застал страшную картину. Старик сидел возле кровати обтирая молодого юношу. который был перевязан бинтами, пропитанными кровью. «Кто там, Машка?» не оборачиваясь спросил старик.",
-    "Прокашлявшись, ты решил представиться - «Здрасте, я тут заблудился, а еще эта метель....». Но не успел ты закончить, как с улицы донесся ужасающий вой...",
-    "Старик обернулся на тебя, на его лице был страх, но в глазах виднелся огонь битвы. «Они приходят из леса», — говорит старик. — «Тени с красными глазами. Пули их не берут», Старик дает тебе кувалду, - «Им страшен только резонанс. Громкий звук металла дробит их сущность»"
+    { 
+        text: "Метель застала тебя в пути на станцию. Начало вечереть, а солнце уже опускалось за горизонт.<br>Ты замерзал в лесу, пока не набрел на старую башню смотрителя Ж/Д станции.", 
+        img: "img/intro_1.png" // Замените на путь к вашему файлу
+    },
+    { 
+        text: "В надежде, ты дернул ручку но дверь оказалась заперта. «Эй, есть кто дома!?», - ты крикнул и сильно постучал в дверь.", 
+        img: "img/intro_2.jpg" 
+    },
+    { 
+        text: "Ты уже собрался было идти дальше, как внезапно, дверь открылась и в узкой щели дверного проема ты увидел красивую девушку в тулупе явно не её размера. «Эм, мне бы ...», - не успел ты закончить фразу, как дверь открылась и девушка, с силой втянула тебя внутрь", 
+        img: null 
+    },
+    { 
+        text: "Закрыв за тобой дверь, она забаррикадировала её тяжелыми ящиками и столом, а затем взяв тебя за руку поспешила наверх башни.", 
+        img: null 
+    },
+    { 
+        text: "Наверху ты застал страшную картину. Старик сидел возле кровати обтирая молодого юношу. который был перевязан бинтами, пропитанными кровью. «Кто там, Машка?» не оборачиваясь спросил старик.", 
+        img: null 
+    },
+    { 
+        text: "Прокашлявшись, ты решил представиться - «Здрасте, я тут заблудился, а еще эта метель....». Но не успел ты закончить, как с улицы донесся ужасающий вой...", 
+        img: null 
+    },
+    { 
+        text: "Старик обернулся на тебя, на его лице был страх, но в глазах виднелся огонь битвы. «Они приходят из леса», — говорит старик. — «Тени с красными глазами. Пули их не берут», Старик дает тебе кувалду, - «Им страшен только резонанс. Громкий звук металла дробит их сущность»", 
+        img: null 
+    }
 ];
 
 let currentIntroIndex = 0;
-document.getElementById('intro-text').innerHTML = introSlides[0];
+
+function updateIntroSlide() {
+    const slide = introSlides[currentIntroIndex];
+    document.getElementById('intro-text').innerHTML = slide.text;
+    
+    const imgEl = document.getElementById('intro-img');
+    if (slide.img) {
+        imgEl.src = slide.img;
+        imgEl.classList.remove('hidden');
+    } else {
+        imgEl.classList.add('hidden');
+    }
+}
 
 function nextIntro() {
     currentIntroIndex++;
     if (currentIntroIndex === 5) playHowlSound();
+    
     if (currentIntroIndex < introSlides.length) {
-        document.getElementById('intro-text').innerHTML = introSlides[currentIntroIndex];
+        updateIntroSlide();
     } else {
         document.getElementById('intro-screen').classList.add('hidden');
         startTutorial1();
@@ -84,19 +157,4 @@ function closeTutorial() {
 function updateUI() {
     document.getElementById('hp-bar').style.width = (gameState.hp / MAX_HP * 100) + '%';
     document.getElementById('stamina-bar').style.width = (gameState.stamina / MAX_STAMINA * 100) + '%';
-}
-
-function gameOver() {
-    gameState.running = false;
-    document.getElementById('game-over-screen').classList.remove('hidden');
-}
-
-function winGame() {
-    gameState.running = false;
-    playTrainSound();
-    const train = document.getElementById('train');
-    train.style.transition = 'left 2s linear';
-    train.style.left = '2000px'; 
-    gameState.enemies.forEach(e => { if(e.el) e.el.remove(); });
-    document.getElementById('win-screen').classList.remove('hidden');
 }

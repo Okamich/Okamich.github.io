@@ -1,18 +1,21 @@
-/* --- ЛОГИКА МИНИ-ИГР (FINAL v2) --- */
+/* --- ЛОГИКА МИНИ-ИГР (FINAL v6 - Debug Update) --- */
 
 let currentActivityType = '';
 
-function startActivity(type) {
-    // Очистка от предыдущих инъекций (например, хедера поиска)
+function startActivity(type, isTestMode = false) {
     const oldHeader = document.getElementById('scavenge-header');
     if (oldHeader) oldHeader.remove();
 
     currentActivityType = type;
+    gameState.testMinigameMode = isTestMode; // Установка флага теста
+    
     document.getElementById('mini-game-modal').classList.remove('hidden');
     document.getElementById('mg-close-btn').classList.add('hidden');
     
-    // Сброс текстов к дефолтным (на случай если они менялись)
-    document.getElementById('mg-title').innerText = "АКТИВНОСТЬ";
+    let titleText = "АКТИВНОСТЬ";
+    if (isTestMode) titleText += " (ТЕСТ)";
+    document.getElementById('mg-title').innerText = titleText;
+    
     document.getElementById('mg-desc').innerText = "Описание задачи";
 
     const area = document.getElementById('mg-area');
@@ -21,8 +24,10 @@ function startActivity(type) {
 
     if (type === 'scavenge') initScavenge(area);
     else if (type === 'upgrade') initUpgrade(area);
+    else if (type === 'repair') initUpgrade(area);
     else if (type === 'heal') initHeal(area);
     else if (type === 'rest') initRest(area);
+    else if (type === 'funeral') initRest(area);
 }
 
 // --- ПОИСК ---
@@ -36,10 +41,8 @@ function initScavenge(area) {
         { shape: 'triangle', color: '#2196f3', found: false }
     ];
 
-    // Создаем хедер с целями
     const header = document.createElement('div');
     header.id = 'scavenge-header';
-    // Добавляем стили, чтобы он выглядел нормально вне черного поля
     header.style.marginBottom = "10px"; 
     
     targets.forEach((t, i) => {
@@ -56,12 +59,9 @@ function initScavenge(area) {
         header.appendChild(div);
     });
 
-    // ВСТАВЛЯЕМ МЕЖДУ ЗАГОЛОВКОМ И ОПИСАНИЕМ
-    // Находим элемент описания и вставляем хедер ПЕРЕД ним
     const descEl = document.getElementById('mg-desc');
     descEl.parentNode.insertBefore(header, descEl);
 
-    // Фонарик и предметы
     const light = document.createElement('div');
     light.id = 'flashlight';
     area.appendChild(light);
@@ -114,7 +114,7 @@ function initScavenge(area) {
             const targetEl = document.getElementById(`target-${index}`);
             if(targetEl) targetEl.classList.add('found');
             
-            if (targets.every(t => t.found)) finishMiniGame("Найдено: Запчасти, Еда, Батарея!");
+            if (targets.every(t => t.found)) finishMiniGame("Найдено: Батарейки и припасы.");
         };
         area.appendChild(item);
     }
@@ -122,7 +122,8 @@ function initScavenge(area) {
 
 // --- ГАЙКИ ---
 function initUpgrade(area) {
-    document.getElementById('mg-title').innerText = "СОРТИРОВКА";
+    const title = currentActivityType === 'repair' ? "РЕМОНТ" : "СОРТИРОВКА";
+    document.getElementById('mg-title').innerText = title;
     document.getElementById('mg-desc').innerText = "Собери гайки одного цвета на болтах";
     const container = document.createElement('div');
     container.className = 'bolt-container';
@@ -173,7 +174,12 @@ function initUpgrade(area) {
                 if (c1 === c2 && c2 === c3) completedCols++;
             }
         });
-        if (completedCols >= 2) finishMiniGame("Болты затянуты! Дальность звука увеличена.");
+        if (completedCols >= 2) {
+            const winMsg = currentActivityType === 'repair' 
+                ? "Дверь укреплена! Прочность восстановлена." 
+                : "Рельс настроен! Радиус удара увеличен.";
+            finishMiniGame(winMsg);
+        }
     }
 }
 
@@ -268,7 +274,7 @@ function initHeal(area) {
 
     function updateView() {
         updateFlask(fA, a, 5, "A"); updateFlask(fB, b, 3, "B");
-        if (a === 4) finishMiniGame("Синтез завершен! Лекарство готово.");
+        if (a === 4) finishMiniGame("Синтез завершен! Лекарство введено.");
     }
     function updateFlask(el, val, max, label) {
         el.querySelector('.liquid').style.height = (val / max * 100) + '%';
@@ -277,22 +283,21 @@ function initHeal(area) {
     updateView();
 }
 
-// --- РЮКЗАК ---
+// --- РЮКЗАК / ПОХОРОНЫ ---
 function initRest(area) {
-    document.getElementById('mg-title').innerText = "РЮКЗАК";
-    document.getElementById('mg-desc').innerText = "Заполни ВСЕ ячейки (Клик по сетке для установки/удаления)";
+    const isFuneral = currentActivityType === 'funeral';
+    document.getElementById('mg-title').innerText = isFuneral ? "ПОХОРОНЫ" : "РЮКЗАК";
+    document.getElementById('mg-desc').innerText = isFuneral ? "Подготовь место в мерзлой земле..." : "Заполни ВСЕ ячейки";
+    
     const gridDiv = document.createElement('div');
     gridDiv.className = 'inv-grid';
     const grid = [];
     
-    // Создаем сетку
     for(let i=0; i<16; i++) {
         const cell = document.createElement('div');
         cell.className = 'inv-cell';
-        // При клике теперь обрабатываем и установку, и удаление
         cell.onclick = () => handleGridClick(i);
         gridDiv.appendChild(cell);
-        // Добавляем itemId для отслеживания, какой блок занимает клетку
         grid.push({ occupied: false, itemId: null, el: cell });
     }
     area.appendChild(gridDiv);
@@ -314,26 +319,26 @@ function initRest(area) {
             if(it.placed) return;
             const div = document.createElement('div');
             div.className = 'inv-item-source';
+            if(isFuneral) div.style.backgroundColor = "#5d4037"; 
             if (selectedItem === it) div.classList.add('selected');
             div.style.width = (it.w * 30) + 'px';
             div.style.height = (it.h * 30) + 'px';
             div.onclick = () => { selectedItem = it; renderPool(); };
             pool.appendChild(div);
         });
-        if(grid.every(c => c.occupied)) finishMiniGame("Рюкзак собран идеально! Сил прибавилось.");
+        if(grid.every(c => c.occupied)) {
+            const msg = isFuneral ? "Тело предано земле. Светлая память." : "Вещи уложены! Восстановление сил быстрее.";
+            finishMiniGame(msg);
+        }
     }
     area.appendChild(pool);
     renderPool();
 
     function handleGridClick(idx) {
         const cellData = grid[idx];
-        
-        // Если клетка занята - удаляем предмет
         if (cellData.occupied) {
             const idToRemove = cellData.itemId;
             if (!idToRemove) return;
-
-            // Очищаем все клетки, занятые этим предметом
             grid.forEach(c => {
                 if (c.itemId === idToRemove) {
                     c.occupied = false;
@@ -341,15 +346,10 @@ function initRest(area) {
                     c.el.classList.remove('filled');
                 }
             });
-
-            // Возвращаем предмет в пул
             const itemObj = items.find(it => it.id === idToRemove);
             if (itemObj) itemObj.placed = false;
-            
             renderPool();
-        } 
-        // Если клетка свободна - пытаемся поставить
-        else {
+        } else {
             tryPlace(idx);
         }
     }
@@ -361,23 +361,20 @@ function initRest(area) {
         if (col + selectedItem.w > 4) return;
         if (row + selectedItem.h > 4) return;
 
-        // Проверка: свободны ли нужные клетки
         const cellsToOccupy = [];
         for(let r=0; r<selectedItem.h; r++) {
             for(let c=0; c<selectedItem.w; c++) {
                 const targetIdx = (row+r)*4 + (col+c);
-                if (grid[targetIdx].occupied) return; // Занято - отмена
+                if (grid[targetIdx].occupied) return;
                 cellsToOccupy.push(grid[targetIdx]);
             }
         }
-        
-        // Занимаем клетки
         cellsToOccupy.forEach(c => { 
             c.occupied = true; 
-            c.itemId = selectedItem.id; // Запоминаем ID предмета
+            c.itemId = selectedItem.id; 
             c.el.classList.add('filled'); 
+            if(isFuneral) c.el.style.backgroundColor = "#3e2723"; 
         });
-        
         selectedItem.placed = true;
         selectedItem = null;
         renderPool();
@@ -385,25 +382,48 @@ function initRest(area) {
 }
 
 function finishMiniGame(msg) {
+    // В режиме теста мы ничего не меняем в стейте, только выводим алерт
+    if (gameState.testMinigameMode) {
+        alert("ТЕСТ: Победа! (Состояние игры не изменено)");
+        document.getElementById('mini-game-modal').classList.add('hidden');
+        return;
+    }
+
+    gameState.preparationScore++;
+
     if (currentActivityType === 'rest') {
-        gameState.stamina = Math.min(gameState.stamina + 50, MAX_STAMINA);
-        msg += " (+50 Выносливости)";
+        gameState.staminaRegenMod += 0.2;
+        gameState.stamina = Math.min(gameState.stamina + 20, MAX_STAMINA);
+        msg += " (+20% к скорости восст.)";
     } 
     else if (currentActivityType === 'heal') {
-        gameState.hp = Math.min(gameState.hp + 30, MAX_HP);
-        if(typeof updateUI === 'function') updateUI();
-        msg += " (+30 HP)";
+        gameState.healsDone++;
+        gameState.healedToday = true;
+        msg = `Лечение проведено (${gameState.healsDone}/3).`;
+        if (gameState.healsDone >= 3 && !gameState.guyActive) {
+            gameState.guyActive = true;
+            msg = "Парень очнулся! Он поможет в обороне.";
+            alert("СЮЖЕТ: Парень пришел в себя! Теперь он будет ускорять перезарядку генератора и помогать днем.");
+        }
+    }
+    else if (currentActivityType === 'funeral') {
+        gameState.funeralPerformed = true;
+        msg = "Долг выполнен.";
     }
     else if (currentActivityType === 'upgrade') {
         gameState.railPower += 0.2; 
-        msg += " (Усиление звука)";
+        msg += " (Радиус звука увеличен)";
     }
     else if (currentActivityType === 'scavenge') {
         gameState.inventory.batteries++;
-        msg += " (Батарея получена)";
+        msg = "Найдены батарейки и припасы!";
+    }
+    else if (currentActivityType === 'repair') {
+        gameState.hp = Math.min(gameState.hp + 30, MAX_HP);
+        if(typeof updateUI === 'function') updateUI();
+        msg = "Башня отремонтирована (+30 Прочности)";
     }
     
-    // Очистка UI от инъекций поиска при завершении
     const oldHeader = document.getElementById('scavenge-header');
     if (oldHeader) oldHeader.remove();
 
@@ -413,12 +433,25 @@ function finishMiniGame(msg) {
 }
 
 function closeMiniGame() {
-    // Финальная очистка на случай закрытия крестиком (если он будет добавлен) или кнопкой
+    // Если тест - не меняем фазу дня
+    if (gameState.testMinigameMode) {
+        document.getElementById('mini-game-modal').classList.add('hidden');
+        gameState.testMinigameMode = false;
+        return;
+    }
+
     const oldHeader = document.getElementById('scavenge-header');
     if (oldHeader) oldHeader.remove();
 
     document.getElementById('mini-game-modal').classList.add('hidden');
     if (gameState.started || gameState.currentDay > 0) { 
+        
+        if (gameState.guyActive && gameState.dayPhase === 1 && !gameState.extraActionUsed) {
+            gameState.extraActionUsed = true;
+            document.getElementById('day-ui-header').innerText += " (ДОП. ДЕЙСТВИЕ)";
+            return;
+        }
+
         gameState.dayPhase++;
         if (gameState.dayPhase > 2) endDay();
         else updateDayHeader();
