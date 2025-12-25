@@ -67,4 +67,11 @@
     <p>You got lost in a snowstorm and found the station caretaker's house, but suddenly you find yourself embroiled in a struggle for survival.</p>
   </div>
 
+  <!-- Block 10 -->
+  <div style="flex: 1 0 30%; min-width: 300px; border: 1px solid #e1e4e8; border-radius: 6px; padding: 15px; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+    <h3 style="margin-top: 0;"><a href="https://okamich.github.io/projects/FinanceSim/">[HTML] FinanceSim</a></h3>
+    <p>Game example made with gemini-3pro.</p>
+    <p>You got lost in a snowstorm and found the station caretaker's house, but suddenly you find yourself embroiled in a struggle for survival.</p>
+  </div>
+
 </div>
