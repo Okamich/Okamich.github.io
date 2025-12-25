@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cripto Wallet</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* Custom Neon Glow Effects */
+        .neon-text {
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+        }
+        .card-glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Smooth fade in for list items */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .transaction-item {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        /* Custom Scrollbar for history */
+        .history-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .history-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans min-h-screen flex items-center justify-center p-4 selection:bg-emerald-500 selection:text-white">
+
+    <!-- App Container -->
+    <div class="w-full max-w-md bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-800 relative">
+        
+        <!-- Header -->
+        <header class="p-6 pb-2 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-slate-900">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                </div>
+                <span class="font-bold text-lg tracking-wide text-white">Invest<span class="text-emerald-400">Bank</span></span>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-slate-400">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+            </div>
+        </header>
+
+        <!-- Balance Section -->
+        <div class="px-6 pt-4 pb-2 text-center">
+            <p class="text-slate-400 text-sm font-medium uppercase tracking-wider mb-1">Total Balance</p>
+            <h1 id="balanceDisplay" class="text-4xl font-black text-white neon-text transition-all duration-300">$10,000.00</h1>
+            <div class="flex items-center justify-center gap-1 mt-2 text-emerald-400 font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+                </svg>
+                <span id="profitDisplay">+$0.00 (0.00%)</span>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="h-64 w-full mt-4 px-2 relative">
+            <!-- Overlay gradient to fade bottom of chart -->
+            <div class="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
+            <canvas id="liveChart"></canvas>
+        </div>
+
+        <!-- Controls / Actions -->
+        <div class="grid grid-cols-2 gap-4 px-6 mb-6 mt-2">
+            <button class="py-3 rounded-xl bg-emerald-500 text-slate-900 font-bold hover:bg-emerald-400 transition shadow-[0_0_15px_rgba(16,185,129,0.3)] active:scale-95">Deposit</button>
+            <button class="py-3 rounded-xl bg-slate-800 text-white font-bold border border-slate-700 hover:bg-slate-700 transition active:scale-95">Withdraw</button>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="bg-slate-800/50 rounded-t-3xl pt-6 pb-4 px-6 min-h-[300px] border-t border-slate-700/50 backdrop-blur-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-white text-lg">Activity</h3>
+                <span class="text-xs text-slate-500 bg-slate-900/80 px-2 py-1 rounded">Live Feed</span>
+            </div>
+            
+            <div id="historyList" class="space-y-3 max-h-[250px] overflow-y-auto history-scroll pr-2">
+                <!-- Transactions will be injected here -->
+                <p class="text-center text-slate-500 text-sm py-4 italic" id="emptyState">Waiting for market activity...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const CONFIG = {
+            startBalance: 10000,
+            volatility: 0.004, // 0.4% max change per tick
+            bias: 0.0008,      // Slight upward bias
+            tickRate: 1500,    // ms between updates
+            maxHistoryItems: 20
+        };
+
+        // --- State ---
+        let balance = CONFIG.startBalance;
+        let startBalance = CONFIG.startBalance;
+        let chartDataPoints = [];
+        let labels = [];
+        let tickCount = 0;
+
+        // --- Assets for simulation ---
+        const assets = [
+            { symbol: 'AAPL', name: 'Apple Inc.' },
+            { symbol: 'TSLA', name: 'Tesla Inc.' },
+            { symbol: 'BTC', name: 'Bitcoin' },
+            { symbol: 'ETH', name: 'Ethereum' },
+            { symbol: 'NVDA', name: 'Nvidia' },
+            { symbol: 'AMZN', name: 'Amazon' },
+            { symbol: 'GOOGL', name: 'Alphabet' }
+        ];
+
+        // --- DOM Elements ---
+        const balanceEl = document.getElementById('balanceDisplay');
+        const profitEl = document.getElementById('profitDisplay');
+        const historyListEl = document.getElementById('historyList');
+        const emptyStateEl = document.getElementById('emptyState');
+
+        // --- Formatter ---
+        const currency = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2
+        });
+
+        // --- Chart Setup ---
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        
+        // Create gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)'); // Emerald color with opacity
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Portfolio Value',
+                    data: chartDataPoints,
+                    borderColor: '#34d399', // Emerald 400
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    fill: true,
+                    tension: 0.4 // Smooth curves
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#94a3b8',
+                        bodyColor: '#fff',
+                        borderColor: '#334155',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: { display: false }, // Hide X axis
+                    y: {
+                        display: false, // Hide Y axis labels for cleaner look
+                        grace: '5%' // Add some spacing at top/bottom
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'linear'
+                }
+            }
+        });
+
+        // Init Chart with starting point
+        addChartData(balance);
+
+        // --- Core Logic ---
+
+        function updateMarket() {
+            tickCount++;
+            
+            // 1. Calculate new balance
+            // Random factor between -1 and 1
+            const randomFactor = (Math.random() * 2) - 1; 
+            
+            // Apply volatility and bias
+            // If randomFactor is high (>0), we grow. If low, we dip.
+            // Bias ensures over time it goes up.
+            let changePercent = (randomFactor * CONFIG.volatility) + CONFIG.bias;
+            
+            // Occasional "Market Correction" or "Moon" event (5% chance)
+            if (Math.random() > 0.95) {
+                changePercent *= 3; // Big swing
+            }
+
+            const changeAmount = balance * changePercent;
+            balance += changeAmount;
+
+            // 2. Update UI
+            updateDisplay(changeAmount);
+            
+            // 3. Update Chart
+            addChartData(balance);
+            
+            // 4. Generate Transaction
+            // Only generate transaction if the change is noticeable (> $10) or randomly
+            if (Math.abs(changeAmount) > 5 || Math.random() > 0.5) {
+                generateTransaction(changeAmount);
+            }
+        }
+
+        function updateDisplay(lastChange) {
+            // Balance
+            balanceEl.textContent = currency.format(balance);
+            
+            // Profit stats
+            const totalProfit = balance - startBalance;
+            const profitPercent = (totalProfit / startBalance) * 100;
+            
+            const sign = totalProfit >= 0 ? '+' : '';
+            profitEl.textContent = `${sign}${currency.format(totalProfit)} (${sign}${profitPercent.toFixed(2)}%)`;
+            
+            // Color Logic (Green for profit, Red for loss)
+            // Note: Requested neon green for profit. We'll use Red for loss for realism.
+            if (totalProfit >= 0) {
+                profitEl.className = "flex items-center justify-center gap-1 mt-2 text-emerald-400 font-medium";
+                balanceEl.classList.remove('text-red-400');
+                balanceEl.classList.add('text-white'); // Base
+                chart.data.datasets[0].borderColor = '#34d399';
+                gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+            } else {
+                profitEl.className = "flex items-center justify-center gap-1 mt-2 text-red-400 font-medium";
+                balanceEl.classList.remove('text-white');
+                balanceEl.classList.add('text-red-400');
+                chart.data.datasets[0].borderColor = '#f87171'; // Red 400
+                gradient.addColorStop(0, 'rgba(248, 113, 113, 0.2)');
+            }
+            chart.update('none'); // Update colors without full re-render
+        }
+
+        function addChartData(value) {
+            const now = new Date();
+            const timeLabel = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+            
+            labels.push(timeLabel);
+            chartDataPoints.push(value);
+
+            // Keep only last 30 points
+            if (labels.length > 30) {
+                labels.shift();
+                chartDataPoints.shift();
+            }
+            
+            chart.update();
+        }
+
+        function generateTransaction(changeAmount) {
+            if (emptyStateEl) emptyStateEl.style.display = 'none';
+
+            const asset = assets[Math.floor(Math.random() * assets.length)];
+            const isProfit = changeAmount > 0;
+            
+            // If balance grew, we imply a "Sold for Profit" or "Asset Increase"
+            // If balance fell, we imply "Asset Dip"
+            
+            // For a trading sim feel:
+            // Green tick = "Sold [Stock] +$XX" or "Dividends"
+            // Red tick = "Loss on [Stock]"
+            
+            const action = isProfit ? "Return" : "Loss";
+            const amountStr = currency.format(Math.abs(changeAmount));
+            const colorClass = isProfit ? "text-emerald-400" : "text-red-400";
+            const iconBg = isProfit ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400";
+            const iconSvg = isProfit 
+                ? '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 005.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />' // Up arrow
+                : '<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.51l-5.511-3.181" />'; // Down arrow
+
+            const itemHTML = `
+                <div class="transaction-item flex items-center justify-between p-3 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full ${iconBg} flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                ${iconSvg}
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-white text-sm">${asset.symbol}</p>
+                            <p class="text-xs text-slate-400">${asset.name}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold ${colorClass} text-sm">${isProfit ? '+' : '-'}${amountStr}</p>
+                        <p class="text-xs text-slate-500">Just now</p>
+                    </div>
+                </div>
+            `;
+
+            historyListEl.insertAdjacentHTML('afterbegin', itemHTML);
+
+            // Cleanup old items
+            if (historyListEl.children.length > CONFIG.maxHistoryItems) {
+                historyListEl.lastElementChild.remove();
+            }
+        }
+
+        // --- Start Loop ---
+        setInterval(updateMarket, CONFIG.tickRate);
+        
+        // Initial dummy data to make chart look alive immediately
+        for(let i=0; i<10; i++) {
+            chartDataPoints.push(null); 
+            labels.push(""); 
+        }
+
+    </script>
+</body>
+</html>
